@@ -60,7 +60,7 @@ export default function DashboardContent() {
               </Grid>
             </Grid>
           </Box>
-          <Card variant="outlined">
+          <Card>
             <CardContent>
               <LineChart
                 dataProvider={forecast}
@@ -69,7 +69,7 @@ export default function DashboardContent() {
               />
             </CardContent>
           </Card>
-          <Card variant="outlined">
+          <Card>
             <CardContent>
               <LineChart
                 dataProvider={forecast}
@@ -78,7 +78,7 @@ export default function DashboardContent() {
               />
             </CardContent>
           </Card>
-          <Card variant="outlined">
+          <Card>
             <CardContent>
               <BarChart
                 dataProvider={forecast}

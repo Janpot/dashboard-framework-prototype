@@ -111,7 +111,7 @@ export default function DashboardContent() {
                 <DataGrid dataProvider={dataProvider} pagination autoPageSize />
               </Grid>
               <Grid xs={12} md={6}>
-                <Card variant="outlined">
+                <Card>
                   <CardContent>
                     <LineChart
                       title="Material UI (@mui/material)"
@@ -132,7 +132,7 @@ export default function DashboardContent() {
                 </Card>
               </Grid>
               <Grid xs={12} md={6}>
-                <Card variant="outlined">
+                <Card>
                   <CardContent>
                     <LineChart
                       title="Base UI (@mui/base)"
@@ -149,7 +149,7 @@ export default function DashboardContent() {
                 </Card>
               </Grid>
               <Grid xs={12} md={6}>
-                <Card variant="outlined">
+                <Card>
                   <CardContent>
                     <LineChart
                       title="Material UI React DOM marketshare"
@@ -166,7 +166,7 @@ export default function DashboardContent() {
                 </Card>
               </Grid>
               <Grid xs={12} md={6}>
-                <Card variant="outlined">
+                <Card>
                   <CardContent>
                     <LineChart
                       title="Base UI React DOM marketshare"

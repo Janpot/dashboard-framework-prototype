@@ -75,7 +75,7 @@ export function Metric<R extends Datum>({
   }, [field, fieldDef, value]);
 
   return (
-    <Card variant="outlined">
+    <Card>
       <CardContent>
         <Box sx={{ position: "relative" }}>
           <Typography>{label ?? fieldDef?.label ?? field}</Typography>

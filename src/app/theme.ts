@@ -12,4 +12,11 @@ export const theme = createTheme({
   typography: {
     fontFamily: roboto.style.fontFamily,
   },
+  components: {
+    MuiCard: {
+      defaultProps: {
+        variant: "outlined",
+      },
+    },
+  },
 });
