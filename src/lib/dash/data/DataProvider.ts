@@ -7,7 +7,7 @@ import * as React from "react";
 export type ValidId = string | number;
 export type ValidDatum = {
   id: ValidId;
-  [key: string]: string | number | boolean | Date;
+  [key: string]: string | number | boolean | Date | null;
 };
 export type Datum<R extends ValidDatum = ValidDatum> = R;
 
@@ -15,13 +15,8 @@ export type ValidProp<R extends Datum> = keyof R & string;
 
 export type FieldType = "string" | "number" | "boolean" | "date";
 
-export interface ValueFormatterParams<R extends Datum, K extends ValidProp<R>> {
-  field: K;
-  value: unknown;
-}
-
 export interface ValueFormatter<R extends Datum, K extends ValidProp<R>> {
-  (params: ValueFormatterParams<R, K>): string;
+  (value: R[K], field: K): string;
 }
 
 export interface FieldDef<

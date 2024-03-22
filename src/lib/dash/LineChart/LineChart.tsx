@@ -62,7 +62,7 @@ export function LineChart<R extends Datum>({
           const valueFormatter = field.valueFormatter;
           if (valueFormatter) {
             defaults.valueFormatter = (value: any) =>
-              valueFormatter({ value, field: name });
+              valueFormatter(value, name);
           }
         }
       }

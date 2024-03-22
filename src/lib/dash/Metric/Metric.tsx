@@ -66,10 +66,7 @@ export function Metric<R extends Datum>({
       return "-";
     }
     if (fieldDef?.valueFormatter) {
-      return fieldDef.valueFormatter({
-        value: numberValue,
-        field,
-      });
+      return fieldDef.valueFormatter(numberValue as any, field);
     }
     return numberFormat.format(numberValue);
   }, [field, fieldDef, value]);

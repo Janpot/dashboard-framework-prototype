@@ -391,7 +391,7 @@ function ShowPage({ id }: ShowPageProps) {
                   ([name, field]) => {
                     let value = data[name];
                     if (field.valueFormatter) {
-                      value = field.valueFormatter(value);
+                      value = field.valueFormatter(value, name);
                     }
                     return (
                       <Grid2 container key={name} spacing={2}>

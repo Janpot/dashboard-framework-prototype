@@ -4,8 +4,7 @@ import {
   DataGridPro,
   DataGridProProps,
   GridColDef,
-  GridValidRowModel,
-  GridValueGetterParams,
+  GridValueGetter,
 } from "@mui/x-data-grid-pro";
 import React from "react";
 import { Box, styled } from "@mui/material";
@@ -36,22 +35,24 @@ export interface DataGridProps<R extends Datum>
   dataProvider: ResolvedDataProvider<R>;
 }
 
-function dateValueGetter({ value }: GridValueGetterParams): Date | undefined {
+const dateValueGetter = (value: any) => {
   if (value === null || value === undefined) {
     return undefined;
   }
 
   return new Date(value);
-}
+};
 
-function wrapWithDateValueGetter(valueGetter?: GridColDef["valueGetter"]) {
+function wrapWithDateValueGetter<R extends Datum>(
+  valueGetter?: GridValueGetter<R>,
+): GridValueGetter<R> {
   if (!valueGetter) {
     return dateValueGetter;
   }
 
-  return (params: GridValueGetterParams) => {
-    const value = valueGetter(params);
-    return dateValueGetter({ ...params, value });
+  return (oldValue, ...args) => {
+    const newValue = valueGetter(oldValue, ...args);
+    return dateValueGetter(newValue);
   };
 }
 
@@ -75,7 +76,7 @@ function getColumnsFromFields<R extends Datum>(
     });
 
   return resolvedColumns.map((column) => {
-    let valueGetter = column.valueGetter;
+    let valueGetter: GridValueGetter<R> | undefined = column.valueGetter;
 
     if (column.type === "date" || column.type === "dateTime") {
       valueGetter = wrapWithDateValueGetter(valueGetter);

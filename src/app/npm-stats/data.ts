@@ -1,6 +1,6 @@
 "use client";
 
-import { createDataProvider, ValueFormatterParams } from "../../lib/dash";
+import { createDataProvider } from "../../lib/dash";
 import { Filter } from "@toolpad/dashboard";
 import { fetchGaData } from "./serverData";
 import dayjs from "dayjs";
@@ -9,9 +9,7 @@ const percentFormat = new Intl.NumberFormat(undefined, {
   style: "percent",
 });
 
-function percentFormatter({
-  value,
-}: ValueFormatterParams<any, string>): string {
+function percentFormatter(value: any): string {
   return percentFormat.format(Number(value));
 }
 

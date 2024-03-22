@@ -92,22 +92,22 @@ export const forecast = createDataProvider<WeatherDatum>({
     temperature: {
       label: "Temperature",
       type: "number",
-      valueFormatter: ({ value }) => `${numberFormat.format(Number(value))}°C`,
+      valueFormatter: (value) => `${numberFormat.format(Number(value))}°C`,
     },
     wind: {
       label: "Wind",
       type: "number",
-      valueFormatter: ({ value }) => `${numberFormat.format(Number(value))}m/s`,
+      valueFormatter: (value) => `${numberFormat.format(Number(value))}m/s`,
     },
     windDir: {
       label: "Wind Direction",
       type: "number",
-      valueFormatter: ({ value }) => `${numberFormat.format(Number(value))}°`,
+      valueFormatter: (value) => `${numberFormat.format(Number(value))}°`,
     },
     precipitation: {
       label: "Precipitation",
       type: "number",
-      valueFormatter: ({ value }) => `${numberFormat.format(Number(value))}mm`,
+      valueFormatter: (value) => `${numberFormat.format(Number(value))}mm`,
     },
   },
 });
