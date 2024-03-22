@@ -1,7 +1,14 @@
 "use client";
 
 import * as React from "react";
-import { Dashboard, DataGrid, LineChart, BarChart } from "@/lib/dash";
+import {
+  Dashboard,
+  DataGrid,
+  LineChart,
+  BarChart,
+  Metric,
+  useUrlQueryParameterState,
+} from "@toolpad/dashboard";
 import {
   Box,
   Card,
@@ -12,7 +19,6 @@ import {
   Toolbar,
   Typography,
 } from "@mui/material";
-import { Metric, useUrlQueryParameterState } from "@toolpad/dashboard";
 import Grid from "@mui/material/Unstable_Grid2/Grid2";
 import { CITIES, forecast } from "./data";
 import { MenuItem } from "@mui/material";
