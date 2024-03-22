@@ -18,6 +18,7 @@ const OverlayRoot = styled("div")(({ theme }) => ({
   flexDirection: "column",
   alignItems: "center",
   justifyContent: "center",
+  padding: theme.spacing(2),
 }));
 
 export interface ErrorOverlayProps {
