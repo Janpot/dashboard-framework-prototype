@@ -27,18 +27,7 @@ export default function DashboardContent() {
   });
 
   return (
-    <Dashboard
-      bindings={[
-        [
-          forecast,
-          {
-            city: {
-              eq: city,
-            },
-          },
-        ],
-      ]}
-    >
+    <Dashboard bindings={[[forecast, { city: { eq: city } }]]}>
       <Container sx={{ mt: 5 }}>
         <Stack direction="column" spacing={4}>
           <Toolbar disableGutters>
