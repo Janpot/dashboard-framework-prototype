@@ -1,10 +1,7 @@
 "use client";
 
-import {
-  createDataProvider,
-  ValueFormatterParams,
-} from "../../lib/dash/client";
-import { Filter } from "@/lib/dash/filter";
+import { createDataProvider, ValueFormatterParams } from "../../lib/dash";
+import { Filter } from "@toolpad/dashboard";
 import { fetchGaData } from "./serverData";
 import dayjs from "dayjs";
 

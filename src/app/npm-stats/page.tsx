@@ -1,12 +1,7 @@
 "use client";
 
 import * as React from "react";
-import {
-  Dashboard,
-  DataGrid,
-  LineChart,
-  LineChartProps,
-} from "@/lib/dash/client";
+import { Dashboard, DataGrid, LineChart, LineChartProps } from "@/lib/dash";
 import {
   Box,
   Container,
@@ -15,7 +10,7 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import { useUrlQueryParameterState } from "@/lib/dash/filter";
+import { useUrlQueryParameterState } from "@toolpad/dashboard";
 import dayjs from "dayjs";
 import Grid from "@mui/material/Unstable_Grid2/Grid2";
 import { dailyStats, gaData, monthlyStats } from "./data";

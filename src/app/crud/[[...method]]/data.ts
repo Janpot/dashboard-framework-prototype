@@ -1,6 +1,6 @@
 "use client";
 
-import { createDataProvider } from "@/lib/dash/data";
+import { createDataProvider } from "@toolpad/dashboard";
 
 export type Employee = {
   id: number;

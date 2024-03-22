@@ -16,18 +16,20 @@
     "incremental": true,
     "plugins": [
       {
-        "name": "next",
-      },
+        "name": "next"
+      }
     ],
     "paths": {
       "@/*": ["./src/*"],
-    },
+      "@toolpad/dashboard": ["./src/lib/dash"],
+      "@toolpad/dashboard/*": ["./src/lib/dash/*"]
+    }
   },
   "include": [
     "next-env.d.ts",
     "src/**/*.ts",
     "src/**/*.tsx",
-    ".next/types/**/*.ts",
+    ".next/types/**/*.ts"
   ],
-  "exclude": ["node_modules"],
+  "exclude": ["node_modules"]
 }
