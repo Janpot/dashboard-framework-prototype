@@ -8,14 +8,24 @@ import {
   GridValueGetterParams,
 } from "@mui/x-data-grid-pro";
 import React from "react";
-import { Box } from "@mui/material";
+import { Box, styled } from "@mui/material";
 import {
   ResolvedDataProvider,
   ResolvedField,
   Datum,
   useGetMany,
 } from "../data";
-import { CardSurface, ErrorOverlay, LoadingOverlay } from "../components";
+import { ErrorOverlay, LoadingOverlay } from "../components";
+
+const PlaceholderBorder = styled("div")(({ theme }) => ({
+  position: "absolute",
+  inset: "0 0 0 0",
+  backgroundColor: theme.palette.background.paper,
+  borderColor: theme.palette.divider,
+  borderWidth: 1,
+  borderStyle: "solid",
+  borderRadius: theme.shape.borderRadius,
+}));
 
 export interface DataGridProps<R extends Datum>
   extends Pick<
@@ -116,15 +126,15 @@ export function DataGrid<R extends Datum>({
             {...props}
           />
           {error ? (
-            <CardSurface sx={{ position: "absolute", inset: "0 0 0 0" }}>
+            <PlaceholderBorder>
               <ErrorOverlay error={error} />
-            </CardSurface>
+            </PlaceholderBorder>
           ) : null}
         </>
       ) : (
-        <CardSurface sx={{ position: "absolute", inset: "0 0 0 0" }}>
+        <PlaceholderBorder>
           <LoadingOverlay />
-        </CardSurface>
+        </PlaceholderBorder>
       )}
     </Box>
   );

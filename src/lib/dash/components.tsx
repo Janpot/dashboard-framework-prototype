@@ -2,15 +2,6 @@ import React from "react";
 import { CircularProgress, Typography, styled } from "@mui/material";
 import ErrorIcon from "@mui/icons-material/Error";
 
-export const CardSurface = styled("div")(({ theme }) => ({
-  position: "relative",
-  backgroundColor: theme.palette.background.paper,
-  borderColor: theme.palette.divider,
-  borderWidth: 1,
-  borderStyle: "solid",
-  borderRadius: theme.shape.borderRadius,
-}));
-
 const OverlayRoot = styled("div")(({ theme }) => ({
   position: "absolute",
   inset: "0 0 0 0",

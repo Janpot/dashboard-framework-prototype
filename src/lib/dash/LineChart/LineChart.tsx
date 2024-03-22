@@ -7,9 +7,9 @@ import {
   AxisConfig,
   blueberryTwilightPalette,
 } from "@mui/x-charts";
-import { Box, Typography, useTheme } from "@mui/material";
+import { Box, useTheme } from "@mui/material";
 import { Datum, ResolvedDataProvider, useGetMany } from "../data";
-import { CardSurface, ErrorOverlay, LoadingOverlay } from "../components";
+import { ErrorOverlay, LoadingOverlay } from "../components";
 
 export interface LineChartProps<R extends Datum> extends XLineChartProps {
   title?: string;
@@ -17,7 +17,6 @@ export interface LineChartProps<R extends Datum> extends XLineChartProps {
 }
 
 export function LineChart<R extends Datum>({
-  title,
   dataProvider,
   xAxis,
   series,
@@ -97,22 +96,15 @@ export function LineChart<R extends Datum>({
   }, [data?.rows, dataProvider.fields]);
 
   return (
-    <CardSurface>
-      {title ? (
-        <Typography variant="h6" sx={{ padding: 2 }}>
-          {title}
-        </Typography>
-      ) : null}
-      <Box sx={{ position: "relative" }}>
-        <XLineChart
-          dataset={dataSet}
-          xAxis={resolvedXAxis}
-          series={resolvedSeries}
-          height={300}
-        />
-        {loading ? <LoadingOverlay /> : null}
-        {error ? <ErrorOverlay error={error} /> : null}
-      </Box>
-    </CardSurface>
+    <Box sx={{ position: "relative" }}>
+      <XLineChart
+        dataset={dataSet}
+        xAxis={resolvedXAxis}
+        series={resolvedSeries}
+        height={300}
+      />
+      {loading ? <LoadingOverlay /> : null}
+      {error ? <ErrorOverlay error={error} /> : null}
+    </Box>
   );
 }

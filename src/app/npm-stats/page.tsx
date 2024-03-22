@@ -4,6 +4,8 @@ import * as React from "react";
 import { Dashboard, DataGrid, LineChart, LineChartProps } from "@/lib/dash";
 import {
   Box,
+  Card,
+  CardContent,
   Container,
   MenuItem,
   Stack,
@@ -109,60 +111,76 @@ export default function DashboardContent() {
                 <DataGrid dataProvider={dataProvider} pagination autoPageSize />
               </Grid>
               <Grid xs={12} md={6}>
-                <LineChart
-                  title="Material UI (@mui/material)"
-                  dataProvider={dataProvider}
-                  xAxis={X_AXIS}
-                  series={[
-                    {
-                      dataKey: "muiMaterialDownloadsCount",
-                      showMark: false,
-                    },
-                    {
-                      dataKey: "materialUiCoreDownloadsCount",
-                      showMark: false,
-                    },
-                  ]}
-                />
+                <Card variant="outlined">
+                  <CardContent>
+                    <LineChart
+                      title="Material UI (@mui/material)"
+                      dataProvider={dataProvider}
+                      xAxis={X_AXIS}
+                      series={[
+                        {
+                          dataKey: "muiMaterialDownloadsCount",
+                          showMark: false,
+                        },
+                        {
+                          dataKey: "materialUiCoreDownloadsCount",
+                          showMark: false,
+                        },
+                      ]}
+                    />
+                  </CardContent>
+                </Card>
               </Grid>
               <Grid xs={12} md={6}>
-                <LineChart
-                  title="Base UI (@mui/base)"
-                  dataProvider={dataProvider}
-                  xAxis={X_AXIS}
-                  series={[
-                    {
-                      dataKey: "baseUiDownloadsCount",
-                      showMark: false,
-                    },
-                  ]}
-                />
+                <Card variant="outlined">
+                  <CardContent>
+                    <LineChart
+                      title="Base UI (@mui/base)"
+                      dataProvider={dataProvider}
+                      xAxis={X_AXIS}
+                      series={[
+                        {
+                          dataKey: "baseUiDownloadsCount",
+                          showMark: false,
+                        },
+                      ]}
+                    />
+                  </CardContent>
+                </Card>
               </Grid>
               <Grid xs={12} md={6}>
-                <LineChart
-                  title="Material UI React DOM marketshare"
-                  dataProvider={dataProvider}
-                  xAxis={X_AXIS}
-                  series={[
-                    {
-                      dataKey: "coreMarketShare",
-                      showMark: false,
-                    },
-                  ]}
-                />
+                <Card variant="outlined">
+                  <CardContent>
+                    <LineChart
+                      title="Material UI React DOM marketshare"
+                      dataProvider={dataProvider}
+                      xAxis={X_AXIS}
+                      series={[
+                        {
+                          dataKey: "coreMarketShare",
+                          showMark: false,
+                        },
+                      ]}
+                    />
+                  </CardContent>
+                </Card>
               </Grid>
               <Grid xs={12} md={6}>
-                <LineChart
-                  title="Base UI React DOM marketshare"
-                  dataProvider={dataProvider}
-                  xAxis={X_AXIS}
-                  series={[
-                    {
-                      dataKey: "baseUiMarketShare",
-                      showMark: false,
-                    },
-                  ]}
-                />
+                <Card variant="outlined">
+                  <CardContent>
+                    <LineChart
+                      title="Base UI React DOM marketshare"
+                      dataProvider={dataProvider}
+                      xAxis={X_AXIS}
+                      series={[
+                        {
+                          dataKey: "baseUiMarketShare",
+                          showMark: false,
+                        },
+                      ]}
+                    />
+                  </CardContent>
+                </Card>
               </Grid>
               <Grid xs={12}>
                 <DataGrid dataProvider={gaData} pagination autoPageSize />

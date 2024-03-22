@@ -1,7 +1,7 @@
 import * as React from "react";
 import { ResolvedDataProvider, Datum, ValidProp, useGetMany } from "../data";
-import { CardSurface, ErrorOverlay, LoadingOverlay } from "../components";
-import { Typography } from "@mui/material";
+import { ErrorOverlay, LoadingOverlay } from "../components";
+import { Box, Card, CardContent, Typography } from "@mui/material";
 
 export type Aggregation =
   | "latest"
@@ -75,11 +75,15 @@ export function Metric<R extends Datum>({
   }, [field, fieldDef, value]);
 
   return (
-    <CardSurface sx={{ padding: 2 }}>
-      <Typography>{label ?? fieldDef?.label ?? field}</Typography>
-      <Typography variant="h6">{formattedValue}</Typography>
-      {loading ? <LoadingOverlay /> : null}
-      {error ? <ErrorOverlay error={error} /> : null}
-    </CardSurface>
+    <Card variant="outlined">
+      <CardContent>
+        <Box sx={{ position: "relative" }}>
+          <Typography>{label ?? fieldDef?.label ?? field}</Typography>
+          <Typography variant="h6">{formattedValue}</Typography>
+          {loading ? <LoadingOverlay /> : null}
+          {error ? <ErrorOverlay error={error} /> : null}
+        </Box>
+      </CardContent>
+    </Card>
   );
 }

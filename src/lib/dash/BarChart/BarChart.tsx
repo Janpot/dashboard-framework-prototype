@@ -6,17 +6,15 @@ import {
   BarChartProps as XBarChartProps,
   AxisConfig,
 } from "@mui/x-charts";
-import { Box, Typography } from "@mui/material";
+import { Box } from "@mui/material";
 import { Datum, ResolvedDataProvider, useGetMany } from "../data";
-import { CardSurface, ErrorOverlay, LoadingOverlay } from "../components";
+import { ErrorOverlay, LoadingOverlay } from "../components";
 
 export interface BarChartProps<R extends Datum> extends XBarChartProps {
-  title?: string;
   dataProvider: ResolvedDataProvider<R>;
 }
 
 export function BarChart<R extends Datum>({
-  title,
   dataProvider,
   xAxis,
   series,
@@ -87,22 +85,15 @@ export function BarChart<R extends Datum>({
   }, [data?.rows, dataProvider.fields]);
 
   return (
-    <CardSurface>
-      {title ? (
-        <Typography variant="h6" sx={{ padding: 2 }}>
-          {title}
-        </Typography>
-      ) : null}
-      <Box sx={{ position: "relative" }}>
-        <XBarChart
-          dataset={dataSet}
-          xAxis={resolvedXAxis}
-          series={dataSet.length > 0 ? resolvedSeries : []}
-          height={300}
-        />
-        {loading ? <LoadingOverlay /> : null}
-        {error ? <ErrorOverlay error={error} /> : null}
-      </Box>
-    </CardSurface>
+    <Box sx={{ position: "relative" }}>
+      <XBarChart
+        dataset={dataSet}
+        xAxis={resolvedXAxis}
+        series={dataSet.length > 0 ? resolvedSeries : []}
+        height={300}
+      />
+      {loading ? <LoadingOverlay /> : null}
+      {error ? <ErrorOverlay error={error} /> : null}
+    </Box>
   );
 }

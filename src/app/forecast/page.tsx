@@ -4,6 +4,8 @@ import * as React from "react";
 import { Dashboard, DataGrid, LineChart, BarChart } from "@/lib/dash";
 import {
   Box,
+  Card,
+  CardContent,
   Container,
   Stack,
   TextField,
@@ -69,21 +71,33 @@ export default function DashboardContent() {
               </Grid>
             </Grid>
           </Box>
-          <LineChart
-            dataProvider={forecast}
-            xAxis={FORECAST_X_AXIS}
-            series={[{ dataKey: "temperature" }]}
-          />
-          <LineChart
-            dataProvider={forecast}
-            xAxis={FORECAST_X_AXIS}
-            series={[{ dataKey: "wind", area: true }]}
-          />
-          <BarChart
-            dataProvider={forecast}
-            xAxis={FORECAST_X_AXIS}
-            series={[{ dataKey: "precipitation" }]}
-          />
+          <Card variant="outlined">
+            <CardContent>
+              <LineChart
+                dataProvider={forecast}
+                xAxis={FORECAST_X_AXIS}
+                series={[{ dataKey: "temperature" }]}
+              />
+            </CardContent>
+          </Card>
+          <Card variant="outlined">
+            <CardContent>
+              <LineChart
+                dataProvider={forecast}
+                xAxis={FORECAST_X_AXIS}
+                series={[{ dataKey: "wind", area: true }]}
+              />
+            </CardContent>
+          </Card>
+          <Card variant="outlined">
+            <CardContent>
+              <BarChart
+                dataProvider={forecast}
+                xAxis={FORECAST_X_AXIS}
+                series={[{ dataKey: "precipitation" }]}
+              />
+            </CardContent>
+          </Card>
         </Stack>
       </Container>
     </Dashboard>

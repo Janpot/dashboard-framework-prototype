@@ -2,12 +2,11 @@
 
 import React from "react";
 import { PieChart as XPieChart } from "@mui/x-charts";
-import { Box, Typography } from "@mui/material";
+import { Box } from "@mui/material";
 import { useGetMany, ResolvedDataProvider, Datum } from "../data";
-import { CardSurface, LoadingOverlay, ErrorOverlay } from "../components";
+import { LoadingOverlay, ErrorOverlay } from "../components";
 
 export interface PieChartProps<R extends Datum> {
-  title?: string;
   dataProvider: ResolvedDataProvider<R>;
   dimension: string;
   label: string;
@@ -17,7 +16,6 @@ export function PieChart<R extends Datum>({
   dataProvider,
   dimension,
   label,
-  title,
 }: PieChartProps<R>) {
   const { data, loading, error } = useGetMany(dataProvider);
 
@@ -33,17 +31,10 @@ export function PieChart<R extends Datum>({
   }, [data, dimension, label]);
 
   return (
-    <CardSurface>
-      {title ? (
-        <Typography variant="h6" sx={{ padding: 2 }}>
-          {title}
-        </Typography>
-      ) : null}
-      <Box sx={{ position: "relative" }}>
-        <XPieChart series={series} height={300} />
-        {loading ? <LoadingOverlay /> : null}
-        {error ? <ErrorOverlay error={error} /> : null}
-      </Box>
-    </CardSurface>
+    <Box sx={{ position: "relative" }}>
+      <XPieChart series={series} height={300} />
+      {loading ? <LoadingOverlay /> : null}
+      {error ? <ErrorOverlay error={error} /> : null}
+    </Box>
   );
 }
