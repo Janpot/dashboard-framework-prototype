@@ -38,7 +38,7 @@ import { ArrowBack } from "@mui/icons-material";
 import { Controller, DefaultValues, Path, useForm } from "react-hook-form";
 import { LoadingButton } from "@mui/lab";
 import { useNavigate } from "../navigation";
-import Grid2 from "@mui/material/Unstable_Grid2/Grid2";
+import Grid2 from "@mui/material/Unstable_Grid2";
 import { GridEventListener } from "@mui/x-data-grid-pro";
 import { ErrorOverlay, LoadingOverlay } from "../components";
 

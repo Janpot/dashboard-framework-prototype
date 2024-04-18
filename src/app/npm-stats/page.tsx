@@ -19,7 +19,7 @@ import {
   Typography,
 } from "@mui/material";
 import dayjs from "dayjs";
-import Grid from "@mui/material/Unstable_Grid2/Grid2";
+import Grid from "@mui/material/Unstable_Grid2";
 import { dailyStats, gaData, monthlyStats } from "./data";
 import { DateRangePicker } from "@mui/x-date-pickers-pro";
 

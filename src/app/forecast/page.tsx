@@ -19,7 +19,7 @@ import {
   Toolbar,
   Typography,
 } from "@mui/material";
-import Grid from "@mui/material/Unstable_Grid2/Grid2";
+import Grid from "@mui/material/Unstable_Grid2";
 import { CITIES, forecast } from "./data";
 import { MenuItem } from "@mui/material";
 
