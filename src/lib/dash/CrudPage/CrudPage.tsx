@@ -9,7 +9,6 @@ import {
   useCreateOne,
   useUpdateOne,
   FieldDef,
-  Mutation,
   useDeleteOne,
 } from "../data";
 import {
@@ -19,10 +18,6 @@ import {
   Button,
   Checkbox,
   Container,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
   FormControlLabel,
   IconButton,
   Link,
@@ -41,6 +36,7 @@ import { useNavigate } from "../navigation";
 import Grid2 from "@mui/material/Unstable_Grid2";
 import { GridEventListener } from "@mui/x-data-grid-pro";
 import { ErrorOverlay, LoadingOverlay } from "../components";
+import { useDialog } from "../dialogs";
 
 const CrudContext = React.createContext<{
   dataProvider: ResolvedDataProvider<any>;
@@ -317,46 +313,28 @@ interface ShowPageProps {
 
 function ShowPage({ id }: ShowPageProps) {
   const navigate = useNavigate();
+  const dialogs = useDialog();
   const { basePath, name, dataProvider } = useCrudContext();
   const { data, error, loading } = useGetOne(dataProvider, id);
   const deleteMutation = useDeleteOne(dataProvider);
-  const [openDeleteConfirm, setOpenDeleteConfirm] = React.useState(false);
-  const handleCancelClick = React.useCallback(() => {
-    deleteMutation.reset();
-    setOpenDeleteConfirm(false);
-  }, [deleteMutation]);
-  const handleDeleteClick = React.useCallback(() => {
-    setOpenDeleteConfirm(true);
-  }, [setOpenDeleteConfirm]);
-  const handleDeleteConfirmClick = React.useCallback(async () => {
-    try {
+
+  const handleDeleteClick = React.useCallback(async () => {
+    const deleteConfirmed = await dialogs.confirm(
+      `Are you sure you want to delete the item with id ${id}?`,
+      {
+        okText: "Delete",
+        severity: "error",
+      },
+    );
+
+    if (deleteConfirmed) {
       await deleteMutation.mutate(id);
-      setOpenDeleteConfirm(false);
       navigate(basePath);
-    } catch {}
-  }, [basePath, deleteMutation, id, navigate]);
+    }
+  }, [basePath, deleteMutation, dialogs, id, navigate]);
 
   return (
     <Box>
-      <Dialog maxWidth="xs" open={openDeleteConfirm}>
-        <DialogTitle>Delete {id}</DialogTitle>
-        <DialogContent>
-          Are you sure you want to delete the item with id {id}?
-          {deleteMutation.error ? (
-            <Alert color="error" onClose={() => deleteMutation.reset()}>
-              {deleteMutation.error.message}
-            </Alert>
-          ) : null}
-        </DialogContent>
-        <DialogActions>
-          <Button autoFocus onClick={handleCancelClick}>
-            Cancel
-          </Button>
-          <Button color="error" onClick={handleDeleteConfirmClick}>
-            Delete
-          </Button>
-        </DialogActions>
-      </Dialog>
       <Toolbar disableGutters>
         <Stack direction="row" spacing={2}>
           <IconButton component={NextLink} href={basePath}>
