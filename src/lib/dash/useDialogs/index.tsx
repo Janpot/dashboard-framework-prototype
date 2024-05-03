@@ -289,7 +289,7 @@ export function PromptDialog({ open, payload, onClose }: PromptDialogProps) {
         />
       </DialogContent>
       <DialogActions>
-        <LoadingButton disabled={!open} autoFocus {...cancelButtonProps}>
+        <LoadingButton disabled={!open} {...cancelButtonProps}>
           {payload.cancelText ?? "Cancel"}
         </LoadingButton>
         <LoadingButton disabled={!open} type="submit" loading={submitting}>
