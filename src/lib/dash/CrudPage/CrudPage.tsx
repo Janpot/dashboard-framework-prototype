@@ -1,6 +1,6 @@
 "use client";
 
-import React, { use } from "react";
+import * as React from "react";
 import { DataGrid } from "../DataGrid";
 import {
   ResolvedDataProvider,
