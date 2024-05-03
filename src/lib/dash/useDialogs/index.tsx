@@ -204,7 +204,7 @@ export interface AlertDialogProps
 export function AlertDialog({ open, payload, onClose }: AlertDialogProps) {
   const okButtonProps = useDialogLoadingButton(() => onClose());
   return (
-    <Dialog maxWidth="xs" open={open}>
+    <Dialog maxWidth="xs" open={open} onClose={() => onClose()}>
       <DialogTitle>{payload.title ?? "Alert"}</DialogTitle>
       <DialogContent>{payload.msg}</DialogContent>
       <DialogActions>
@@ -227,7 +227,7 @@ export function ConfirmDialog({ open, payload, onClose }: ConfirmDialogProps) {
   const cancelButtonProps = useDialogLoadingButton(() => onClose(false));
   const okButtonProps = useDialogLoadingButton(() => onClose(true));
   return (
-    <Dialog maxWidth="xs" open={open}>
+    <Dialog maxWidth="xs" open={open} onClose={() => onClose(false)}>
       <DialogTitle>{payload.title ?? "Confirm"}</DialogTitle>
       <DialogContent>{payload.msg}</DialogContent>
       <DialogActions>
@@ -260,6 +260,7 @@ export function PromptDialog({ open, payload, onClose }: PromptDialogProps) {
     <Dialog
       maxWidth="xs"
       open={open}
+      onClose={() => onClose(null)}
       PaperProps={{
         component: "form",
         onSubmit: async (event: React.FormEvent<HTMLFormElement>) => {
