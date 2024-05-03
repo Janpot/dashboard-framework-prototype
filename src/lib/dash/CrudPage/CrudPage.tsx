@@ -326,7 +326,6 @@ function ShowPage({ id }: ShowPageProps) {
         severity: "error",
         async onClose(confirmed) {
           if (confirmed) {
-            await new Promise((resolve) => setTimeout(resolve, 1000));
             await deleteMutation.mutate(id);
             navigate(basePath);
           }
