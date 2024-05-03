@@ -115,9 +115,9 @@ export interface Query<R> {
 }
 
 export function useGetMany<R extends Datum>(
-  dataProvider: ResolvedDataProvider<R>,
+  dataProvider: ResolvedDataProvider<R> | null,
 ): Query<{ rows: R[] }> {
-  const key = getObjectKey(dataProvider);
+  const key = dataProvider ? getObjectKey(dataProvider) : null;
   const filter = useAppliedFilter(dataProvider);
 
   const {
@@ -126,7 +126,11 @@ export function useGetMany<R extends Datum>(
     isLoading: loading,
   } = useQuery({
     queryKey: ["getMany", key, getKeyFromFilter(filter)],
-    queryFn: () => dataProvider.getMany({ filter: filter ?? [] }),
+    queryFn: () =>
+      dataProvider
+        ? dataProvider.getMany({ filter: filter ?? [] })
+        : { rows: [] },
+    enabled: !!dataProvider,
   });
   return React.useMemo(
     () => ({ data, error, loading }),
@@ -135,20 +139,21 @@ export function useGetMany<R extends Datum>(
 }
 
 export function useGetOne<R extends Datum>(
-  dataProvider: ResolvedDataProvider<R>,
+  dataProvider: ResolvedDataProvider<R> | null,
   id: string,
 ): Query<R | null> {
-  const key = getObjectKey(dataProvider);
+  const key = dataProvider ? getObjectKey(dataProvider) : null;
   const {
-    data,
+    data = null,
     error,
     isLoading: loading,
   } = useQuery({
     queryKey: ["getOne", key, id],
     queryFn: () => {
-      invariant(dataProvider.getOne, "getOne not implemented");
+      invariant(dataProvider?.getOne, "getOne not implemented");
       return dataProvider.getOne(id);
     },
+    enabled: !!dataProvider,
   });
   return React.useMemo(
     () => ({ data, error, loading }),
@@ -164,10 +169,13 @@ export interface Mutation<F extends (...args: any[]) => Promise<any>> {
 }
 
 export function useCreateOne<R extends Datum>(
-  dataProvider: ResolvedDataProvider<R>,
+  dataProvider: ResolvedDataProvider<R> | null,
 ): Mutation<CreateOneMethod<R>> {
   const { mutateAsync, isPending, error, reset } = useMutation({
     async mutationFn(data: R) {
+      if (!dataProvider) {
+        throw new Error("no dataProvider available");
+      }
       invariant(dataProvider.createOne, "createOne not implemented");
       return dataProvider.createOne(data);
     },
@@ -185,10 +193,13 @@ export function useCreateOne<R extends Datum>(
 }
 
 export function useUpdateOne<R extends Datum>(
-  dataProvider: ResolvedDataProvider<R>,
+  dataProvider: ResolvedDataProvider<R> | null,
 ): Mutation<UpdateOneMethod<R>> {
   const { mutateAsync, error, isPending, reset } = useMutation({
     async mutationFn([id, data]: [ValidId, R]) {
+      if (!dataProvider) {
+        throw new Error("no dataProvider available");
+      }
       invariant(dataProvider.updateOne, "updateOne not implemented");
       return dataProvider.updateOne(id, data);
     },
@@ -213,10 +224,13 @@ export function useUpdateOne<R extends Datum>(
 }
 
 export function useDeleteOne<R extends Datum>(
-  dataProvider: ResolvedDataProvider<R>,
+  dataProvider: ResolvedDataProvider<R> | null,
 ): Mutation<DeleteOneMethod> {
   const { mutateAsync, error, isPending, reset } = useMutation({
     async mutationFn(id: ValidId) {
+      if (!dataProvider) {
+        throw new Error("no dataProvider available");
+      }
       invariant(dataProvider.deleteOne, "deleteOne not implemented");
       return dataProvider.deleteOne(id);
     },

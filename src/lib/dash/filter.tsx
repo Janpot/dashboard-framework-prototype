@@ -117,7 +117,7 @@ export function FilterBindingProvider({
 }
 
 export function useAppliedFilter<R extends Datum>(
-  dataProvider: ResolvedDataProvider<R>,
+  dataProvider: ResolvedDataProvider<R> | null,
 ): Filter<R> {
   const filters = React.useContext(FilterBindingContext);
   return React.useMemo(

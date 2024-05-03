@@ -32,7 +32,7 @@ export interface DataGridProps<R extends Datum>
     "getRowId" | "pagination" | "autoPageSize" | "onRowClick"
   > {
   columns?: readonly GridColDef<R>[];
-  dataProvider: ResolvedDataProvider<R>;
+  dataProvider?: ResolvedDataProvider<R>;
 }
 
 const dateValueGetter = (value: any) => {
@@ -98,11 +98,14 @@ export function DataGrid<R extends Datum>({
   React.useEffect(() => {
     setMounted(true);
   }, []);
-  const { data, loading, error } = useGetMany(dataProvider);
+  const { data, loading, error } = useGetMany(dataProvider ?? null);
 
   const columns = React.useMemo(
-    () => getColumnsFromFields(dataProvider.fields, columnsProp),
-    [columnsProp, dataProvider.fields],
+    () =>
+      dataProvider
+        ? getColumnsFromFields(dataProvider.fields, columnsProp)
+        : [],
+    [columnsProp, dataProvider],
   );
 
   const rows = React.useMemo(() => {
@@ -117,13 +120,6 @@ export function DataGrid<R extends Datum>({
             rows={rows}
             columns={columns}
             loading={loading}
-            initialState={{
-              columns: {
-                columnVisibilityModel: {
-                  id: false,
-                },
-              },
-            }}
             {...props}
           />
           {error ? (
