@@ -1,3 +1,4 @@
+import { LoadingButton } from "@mui/lab";
 import {
   Dialog,
   DialogTitle,
@@ -10,12 +11,16 @@ import {
 import invariant from "invariant";
 import * as React from "react";
 
-export interface AlertOptions {
+export interface SystemDialogBase<R> {
+  onClose?: (result: R) => Promise<void>;
+}
+
+export interface AlertOptions extends SystemDialogBase<void> {
   title?: React.ReactNode;
   okText?: React.ReactNode;
 }
 
-export interface ConfirmOptions {
+export interface ConfirmOptions extends SystemDialogBase<boolean> {
   title?: React.ReactNode;
   color?: "error" | "info" | "success" | "warning";
   defaultValue?: string;
@@ -24,7 +29,7 @@ export interface ConfirmOptions {
   cancelText?: React.ReactNode;
 }
 
-export interface PromptOptions {
+export interface PromptOptions extends SystemDialogBase<string | null> {
   title?: React.ReactNode;
   okText?: React.ReactNode;
   cancelText?: React.ReactNode;
@@ -33,7 +38,7 @@ export interface PromptOptions {
 export interface DialogProps<P, R> {
   payload: P;
   open: boolean;
-  onClose: (result: R) => void;
+  onClose: (result: R) => Promise<void>;
 }
 
 export interface OpenAlertDialog {
@@ -50,8 +55,16 @@ export interface OpenPromptDialog {
 
 type DialogComponent<P, R> = React.ComponentType<DialogProps<P, R>>;
 
+export interface OpenDialogOptions<P, R> {
+  payload: P;
+  onClose?: (result: R) => Promise<void>;
+}
+
 export interface OpenDialog {
-  <P, R>(Component: DialogComponent<P, R>, payload: P): Promise<R>;
+  <P, R>(
+    Component: DialogComponent<P, R>,
+    options: OpenDialogOptions<P, R>,
+  ): Promise<R>;
 }
 
 export interface CloseDialog {
@@ -72,6 +85,7 @@ interface DialogStackEntry<P, R> {
   promise: Promise<R>;
   Component: DialogComponent<P, R>;
   payload: P;
+  onClose: (result: R) => Promise<void>;
   resolve: (result: R) => void;
 }
 
@@ -92,8 +106,11 @@ export function DialogProvider({ children }: DialogProviderprops) {
   const keyPrefix = React.useId();
   const nextId = React.useRef(0);
 
-  const requestDialog = React.useCallback(
-    <P, R>(Component: DialogComponent<P, R>, payload: P) => {
+  const requestDialog = React.useCallback<OpenDialog>(
+    <P, R>(
+      Component: DialogComponent<P, R>,
+      { payload, onClose = async () => {} }: OpenDialogOptions<P, R>,
+    ) => {
       let resolve: ((result: R) => void) | undefined;
       const promise = new Promise<R>((resolveImpl) => {
         resolve = resolveImpl;
@@ -108,6 +125,7 @@ export function DialogProvider({ children }: DialogProviderprops) {
         promise,
         Component,
         payload,
+        onClose,
         resolve,
       };
 
@@ -133,6 +151,7 @@ export function DialogProvider({ children }: DialogProviderprops) {
     async function <R>(dialog: Promise<R>, result: R) {
       const entry = stack.find((entry) => entry.promise === dialog);
       invariant(entry, "dialog not found");
+      await entry.onClose(result);
       entry.resolve(result);
       closeDialogUi(dialog);
       return dialog;
@@ -149,14 +168,30 @@ export function DialogProvider({ children }: DialogProviderprops) {
             key={key}
             payload={payload}
             open={open}
-            onClose={(result) => {
-              closeDialog(promise, result);
+            onClose={async (result) => {
+              await closeDialog(promise, result);
             }}
           />
         ))}
       </CloseDialogContext.Provider>
     </OpenDialogContext.Provider>
   );
+}
+
+function useDialogLoadingButton(onClose: () => Promise<void>) {
+  const [loading, setLoading] = React.useState(false);
+  const handleClick = async () => {
+    try {
+      setLoading(true);
+      await onClose();
+    } finally {
+      setLoading(false);
+    }
+  };
+  return {
+    onClick: handleClick,
+    loading,
+  };
 }
 
 export interface AlertDialogPayload extends AlertOptions {
@@ -167,12 +202,15 @@ export interface AlertDialogProps
   extends DialogProps<AlertDialogPayload, void> {}
 
 export function AlertDialog({ open, payload, onClose }: AlertDialogProps) {
+  const okButtonProps = useDialogLoadingButton(() => onClose());
   return (
     <Dialog maxWidth="xs" open={open}>
       <DialogTitle>{payload.title ?? "Alert"}</DialogTitle>
       <DialogContent>{payload.msg}</DialogContent>
       <DialogActions>
-        <Button onClick={() => onClose()}>{payload.okText ?? "Ok"}</Button>
+        <LoadingButton disabled={!open} {...okButtonProps}>
+          {payload.okText ?? "Ok"}
+        </LoadingButton>
       </DialogActions>
     </Dialog>
   );
@@ -186,17 +224,23 @@ export interface ConfirmDialogProps
   extends DialogProps<ConfirmDialogPayload, boolean> {}
 
 export function ConfirmDialog({ open, payload, onClose }: ConfirmDialogProps) {
+  const cancelButtonProps = useDialogLoadingButton(() => onClose(false));
+  const okButtonProps = useDialogLoadingButton(() => onClose(true));
   return (
     <Dialog maxWidth="xs" open={open}>
       <DialogTitle>{payload.title ?? "Confirm"}</DialogTitle>
       <DialogContent>{payload.msg}</DialogContent>
       <DialogActions>
-        <Button autoFocus onClick={() => onClose(false)}>
+        <LoadingButton autoFocus disabled={!open} {...cancelButtonProps}>
           {payload.cancelText ?? "Cancel"}
-        </Button>
-        <Button color={payload.severity} onClick={() => onClose(true)}>
+        </LoadingButton>
+        <LoadingButton
+          color={payload.severity}
+          disabled={!open}
+          {...okButtonProps}
+        >
           {payload.okText ?? "Ok"}
-        </Button>
+        </LoadingButton>
       </DialogActions>
     </Dialog>
   );
@@ -210,17 +254,23 @@ export interface PromptDialogProps
   extends DialogProps<PromptDialogPayload, string | null> {}
 
 export function PromptDialog({ open, payload, onClose }: PromptDialogProps) {
+  const cancelButtonProps = useDialogLoadingButton(() => onClose(null));
+  const [submitting, setSubmitting] = React.useState(false);
   return (
     <Dialog
       maxWidth="xs"
       open={open}
       PaperProps={{
         component: "form",
-        onSubmit: (event: React.FormEvent<HTMLFormElement>) => {
+        onSubmit: async (event: React.FormEvent<HTMLFormElement>) => {
           event.preventDefault();
           const formData = new FormData(event.currentTarget);
           const formJson = Object.fromEntries(formData.entries());
-          onClose(formJson.input as string);
+          try {
+            await onClose(formJson.input as string);
+          } finally {
+            setSubmitting(false);
+          }
         },
       }}
     >
@@ -239,32 +289,37 @@ export function PromptDialog({ open, payload, onClose }: PromptDialogProps) {
         />
       </DialogContent>
       <DialogActions>
-        <Button autoFocus onClick={() => onClose(null)}>
+        <LoadingButton disabled={!open} autoFocus {...cancelButtonProps}>
           {payload.cancelText ?? "Cancel"}
-        </Button>
-        <Button type="submit">{payload.okText ?? "Ok"}</Button>
+        </LoadingButton>
+        <LoadingButton disabled={!open} type="submit" loading={submitting}>
+          {payload.okText ?? "Ok"}
+        </LoadingButton>
       </DialogActions>
     </Dialog>
   );
 }
 
-export function useDialog(): DialogHook {
+export function useDialogs(): DialogHook {
   const open = React.useContext(OpenDialogContext);
 
   const close = React.useContext(CloseDialogContext);
 
   const alert = React.useCallback<OpenAlertDialog>(
-    async (msg, options) => open(AlertDialog, { ...options, msg }),
+    async (msg, { onClose, ...options } = {}) =>
+      open(AlertDialog, { onClose, payload: { ...options, msg } }),
     [open],
   );
 
   const confirm = React.useCallback<OpenConfirmDialog>(
-    async (msg, options) => open(ConfirmDialog, { ...options, msg }),
+    async (msg, { onClose, ...options } = {}) =>
+      open(ConfirmDialog, { onClose, payload: { ...options, msg } }),
     [open],
   );
 
   const prompt = React.useCallback<OpenPromptDialog>(
-    async (msg, options) => open(PromptDialog, { ...options, msg }),
+    async (msg, { onClose, ...options } = {}) =>
+      open(PromptDialog, { onClose, payload: { ...options, msg } }),
     [open],
   );
 

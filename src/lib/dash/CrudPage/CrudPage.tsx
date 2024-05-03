@@ -36,7 +36,7 @@ import { useNavigate } from "../navigation";
 import Grid2 from "@mui/material/Unstable_Grid2";
 import { GridEventListener } from "@mui/x-data-grid-pro";
 import { ErrorOverlay, LoadingOverlay } from "../components";
-import { useDialog } from "../dialogs";
+import { useDialogs } from "../useDialogs";
 
 const CrudContext = React.createContext<{
   dataProvider: ResolvedDataProvider<any>;
@@ -313,24 +313,26 @@ interface ShowPageProps {
 
 function ShowPage({ id }: ShowPageProps) {
   const navigate = useNavigate();
-  const dialogs = useDialog();
+  const dialogs = useDialogs();
   const { basePath, name, dataProvider } = useCrudContext();
   const { data, error, loading } = useGetOne(dataProvider, id);
   const deleteMutation = useDeleteOne(dataProvider);
 
   const handleDeleteClick = React.useCallback(async () => {
-    const deleteConfirmed = await dialogs.confirm(
+    await dialogs.confirm(
       `Are you sure you want to delete the item with id ${id}?`,
       {
         okText: "Delete",
         severity: "error",
+        async onClose(confirmed) {
+          if (confirmed) {
+            await new Promise((resolve) => setTimeout(resolve, 1000));
+            await deleteMutation.mutate(id);
+            navigate(basePath);
+          }
+        },
       },
     );
-
-    if (deleteConfirmed) {
-      await deleteMutation.mutate(id);
-      navigate(basePath);
-    }
   }, [basePath, deleteMutation, dialogs, id, navigate]);
 
   return (

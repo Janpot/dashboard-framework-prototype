@@ -7,7 +7,7 @@ import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { ThemeProvider } from "@mui/material/styles";
 import { theme } from "./theme";
-import { DialogProvider } from "@/lib/dash/dialogs";
+import { DialogProvider } from "@/lib/dash/useDialogs";
 
 const queryClient = new QueryClient();
 
