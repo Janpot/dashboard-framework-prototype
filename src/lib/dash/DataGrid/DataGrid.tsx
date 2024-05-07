@@ -5,20 +5,26 @@ import {
   DataGridProProps,
   GridColDef,
   GridProSlotsComponent,
+  GridRowId,
   GridValueGetter,
   useGridApiRef,
 } from "@mui/x-data-grid-pro";
 import React from "react";
-import { Box, styled } from "@mui/material";
+import { Box, CircularProgress, IconButton, styled } from "@mui/material";
 import {
   ResolvedDataProvider,
   ResolvedField,
   Datum,
   useGetMany,
+  useDeleteOne,
 } from "../data";
 import { ErrorOverlay, LoadingOverlay } from "../components";
 import { useNotifications } from "../useNotifications";
 import RowsLoadingOverlay from "./LoadingOverlay";
+import DeleteIcon from "@mui/icons-material/Delete";
+import invariant from "invariant";
+
+const ACTIONS_COLUMN_FIELD = "::toolpad-internal-field::actions";
 
 const PlaceholderBorder = styled("div")(({ theme }) => ({
   position: "absolute",
@@ -31,6 +37,7 @@ const PlaceholderBorder = styled("div")(({ theme }) => ({
 }));
 
 type ProcessRowUpdate = DataGridProProps["processRowUpdate"];
+type AutoSizeOptions = DataGridProProps["autosizeOptions"];
 
 export interface DataGridProps<R extends Datum>
   extends Omit<DataGridProProps<R>, "columns" | "rows"> {
@@ -58,6 +65,49 @@ function wrapWithDateValueGetter<R extends Datum>(
     const newValue = valueGetter(oldValue, ...args);
     return dateValueGetter(newValue);
   };
+}
+
+interface DeleteActionProps<R extends Datum> {
+  id: GridRowId;
+  dataProvider: ResolvedDataProvider<R>;
+}
+
+function DeleteAction<R extends Datum>({
+  id,
+  dataProvider,
+}: DeleteActionProps<R>) {
+  const [pending, setPending] = React.useState(false);
+  const { refetch } = useGetMany(dataProvider);
+
+  const notifications = useNotifications();
+
+  const handleDeleteClick = React.useCallback(async () => {
+    try {
+      setPending(true);
+      invariant(dataProvider.deleteOne, "deleteOne not implemented");
+      await dataProvider.deleteOne(id);
+      notifications.enqueue("Row deleted", { severity: "success" });
+    } catch (error) {
+      notifications.enqueue("Failed to delete row", { severity: "error" });
+    } finally {
+      setPending(false);
+      await refetch();
+    }
+  }, [dataProvider, id, notifications, refetch]);
+
+  return (
+    <IconButton
+      onClick={handleDeleteClick}
+      size="small"
+      aria-label={`Delete row with id "${id}"`}
+    >
+      {pending ? (
+        <CircularProgress size={16} />
+      ) : (
+        <DeleteIcon fontSize="inherit" />
+      )}
+    </IconButton>
+  );
 }
 
 function getGridColDefsForDataProvider<R extends Datum>(
@@ -98,21 +148,35 @@ function getGridColDefsForDataProvider<R extends Datum>(
       colDef.editable = true;
     }
 
-    return colDef;
-  });
+    let valueGetter: GridValueGetter<R> | undefined = colDef.valueGetter;
 
-  return resolvedColumns.map((column) => {
-    let valueGetter: GridValueGetter<R> | undefined = column.valueGetter;
-
-    if (column.type === "date" || column.type === "dateTime") {
+    if (colDef.type === "date" || colDef.type === "dateTime") {
       valueGetter = wrapWithDateValueGetter(valueGetter);
     }
 
     return {
-      ...column,
+      ...colDef,
       valueGetter,
     };
   });
+
+  if (dataProvider.deleteOne) {
+    resolvedColumns.push({
+      field: ACTIONS_COLUMN_FIELD,
+      type: "actions",
+      align: "center",
+      resizable: false,
+      pinnable: false,
+      width: 50,
+      getActions: ({ id }) => {
+        return [
+          <DeleteAction key="delete" id={id} dataProvider={dataProvider} />,
+        ];
+      },
+    });
+  }
+
+  return resolvedColumns;
 }
 
 export function DataGrid<R extends Datum>({
@@ -121,6 +185,8 @@ export function DataGrid<R extends Datum>({
   processRowUpdate: processRowUpdateProp,
   slots: slotsProp,
   apiRef: apiRefProp,
+  initialState: initialStateProp,
+  autosizeOptions: autosizeOptionsProp,
   ...props
 }: DataGridProps<R>) {
   const gridApiRefOwn = useGridApiRef();
@@ -192,6 +258,17 @@ export function DataGrid<R extends Datum>({
     [slotsProp],
   );
 
+  const initialState = {
+    ...initialStateProp,
+    pinnedColumns: {
+      ...initialStateProp?.pinnedColumns,
+      right: [
+        ...(initialStateProp?.pinnedColumns?.right ?? []),
+        ACTIONS_COLUMN_FIELD,
+      ],
+    },
+  };
+
   return (
     <Box sx={{ height: 400, position: "relative" }}>
       {mounted ? (
@@ -203,6 +280,7 @@ export function DataGrid<R extends Datum>({
             loading={loading || pendingMutation}
             processRowUpdate={processRowUpdate}
             slots={slots}
+            initialState={initialState}
             {...props}
           />
           {error ? (
