@@ -8,6 +8,7 @@ import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { ThemeProvider } from "@mui/material/styles";
 import { theme } from "./theme";
 import { DialogProvider } from "@/lib/dash/useDialogs";
+import { NotificationsProvider } from "@/lib/dash/useNotifications";
 
 const queryClient = new QueryClient();
 
@@ -20,11 +21,13 @@ export default function Providers({ children }: ProviderProps) {
     <ThemeProvider theme={theme}>
       <AppNavigationProvider>
         <DialogProvider>
-          <LocalizationProvider dateAdapter={AdapterDayjs}>
-            <QueryClientProvider client={queryClient}>
-              {children}
-            </QueryClientProvider>
-          </LocalizationProvider>
+          <NotificationsProvider>
+            <LocalizationProvider dateAdapter={AdapterDayjs}>
+              <QueryClientProvider client={queryClient}>
+                {children}
+              </QueryClientProvider>
+            </LocalizationProvider>
+          </NotificationsProvider>
         </DialogProvider>
       </AppNavigationProvider>
     </ThemeProvider>

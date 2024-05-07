@@ -32,7 +32,7 @@ const DATA: Employee[] = [
 export const employees = createDataProvider<Employee>({
   async getMany({ filter }) {
     return {
-      rows: DATA,
+      rows: [...DATA],
     };
   },
   async getOne(id) {
@@ -50,6 +50,7 @@ export const employees = createDataProvider<Employee>({
     }
 
     DATA[index] = { ...DATA[index], ...values };
+
     return DATA[index];
   },
   async deleteOne(id) {

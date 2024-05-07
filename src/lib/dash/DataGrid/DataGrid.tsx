@@ -15,6 +15,7 @@ import {
   useGetMany,
 } from "../data";
 import { ErrorOverlay, LoadingOverlay } from "../components";
+import { useNotifications } from "../useNotifications";
 
 const PlaceholderBorder = styled("div")(({ theme }) => ({
   position: "absolute",
@@ -26,11 +27,11 @@ const PlaceholderBorder = styled("div")(({ theme }) => ({
   borderRadius: theme.shape.borderRadius,
 }));
 
+type ProcessRowUpdate = DataGridProProps["processRowUpdate"];
+
 export interface DataGridProps<R extends Datum>
-  extends Pick<
-    DataGridProProps<R>,
-    "getRowId" | "pagination" | "autoPageSize" | "onRowClick"
-  > {
+  extends Omit<DataGridProProps<R>, "columns" | "rows"> {
+  rows?: readonly R[];
   columns?: readonly GridColDef<R>[];
   dataProvider?: ResolvedDataProvider<R>;
 }
@@ -114,22 +115,46 @@ function getGridColDefsForDataProvider<R extends Datum>(
 export function DataGrid<R extends Datum>({
   dataProvider,
   columns: columnsProp,
+  processRowUpdate: processRowUpdateProp,
   ...props
 }: DataGridProps<R>) {
   const [mounted, setMounted] = React.useState(false);
   React.useEffect(() => {
     setMounted(true);
   }, []);
-  const { data, loading, error } = useGetMany(dataProvider ?? null);
+
+  const notifications = useNotifications();
+
+  const { data, loading, error, refetch } = useGetMany(dataProvider ?? null);
 
   const columns = React.useMemo(
     () => getGridColDefsForDataProvider(dataProvider ?? null, columnsProp),
     [columnsProp, dataProvider],
   );
 
-  const rows = React.useMemo(() => {
-    return data?.rows ?? [];
-  }, [data]);
+  const rows = React.useMemo(() => data?.rows ?? [], [data]);
+
+  const processRowUpdate = React.useMemo<ProcessRowUpdate>(() => {
+    if (processRowUpdateProp) {
+      return processRowUpdateProp;
+    }
+    const updateOne = dataProvider?.updateOne;
+    if (!updateOne) {
+      return undefined;
+    }
+    return async (updatedRow: R, originalRow: R): Promise<R> => {
+      try {
+        const result = await updateOne(updatedRow.id, updatedRow);
+        return result;
+      } catch (error) {
+        console.log("oh no", error);
+        notifications.enqueue("Failed to update row", { severity: "error" });
+        return originalRow;
+      } finally {
+        refetch();
+      }
+    };
+  }, [dataProvider?.updateOne, notifications, processRowUpdateProp, refetch]);
 
   return (
     <Box sx={{ height: 400, position: "relative" }}>
@@ -139,6 +164,8 @@ export function DataGrid<R extends Datum>({
             rows={rows}
             columns={columns}
             loading={loading}
+            processRowUpdate={processRowUpdate}
+            onProcessRowUpdateError={console.log}
             {...props}
           />
           {error ? (

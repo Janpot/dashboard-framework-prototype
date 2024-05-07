@@ -112,6 +112,7 @@ export interface Query<R> {
   loading: boolean;
   error: Error | null;
   data?: R;
+  refetch: () => void;
 }
 
 export function useGetMany<R extends Datum>(
@@ -124,6 +125,7 @@ export function useGetMany<R extends Datum>(
     data,
     error,
     isLoading: loading,
+    refetch,
   } = useQuery({
     queryKey: ["getMany", key, getKeyFromFilter(filter)],
     queryFn: () =>
@@ -133,8 +135,8 @@ export function useGetMany<R extends Datum>(
     enabled: !!dataProvider,
   });
   return React.useMemo(
-    () => ({ data, error, loading }),
-    [data, error, loading],
+    () => ({ data, error, loading, refetch }),
+    [data, error, loading, refetch],
   );
 }
 
@@ -147,6 +149,7 @@ export function useGetOne<R extends Datum>(
     data = null,
     error,
     isLoading: loading,
+    refetch,
   } = useQuery({
     queryKey: ["getOne", key, id],
     queryFn: () => {
@@ -156,8 +159,8 @@ export function useGetOne<R extends Datum>(
     enabled: !!dataProvider,
   });
   return React.useMemo(
-    () => ({ data, error, loading }),
-    [data, error, loading],
+    () => ({ data, error, loading, refetch }),
+    [data, error, loading, refetch],
   );
 }
 
