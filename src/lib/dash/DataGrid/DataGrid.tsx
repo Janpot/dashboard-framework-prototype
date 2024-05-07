@@ -56,24 +56,46 @@ function wrapWithDateValueGetter<R extends Datum>(
   };
 }
 
-function getColumnsFromFields<R extends Datum>(
-  fields: { [K in keyof R & string]: Omit<ResolvedField<R, K>, "field"> },
+function getGridColDefsForDataProvider<R extends Datum>(
+  dataProvider: ResolvedDataProvider<R> | null,
   columnsProp?: readonly GridColDef<R>[],
 ): readonly GridColDef<R>[] {
-  const resolvedColumns =
-    columnsProp ??
-    Object.entries(fields).map(([name, field]) => {
-      const colDef: GridColDef<R> = {
-        field: name,
-        type: field.type,
-        headerName: field.label,
-      };
-      const valueFormatter = field.valueFormatter;
-      if (valueFormatter) {
-        colDef.valueFormatter = valueFormatter;
-      }
-      return colDef;
-    });
+  if (!dataProvider) {
+    return columnsProp ?? [];
+  }
+
+  const fieldMap = new Map<keyof R & string, ResolvedField<R, any>>(
+    Object.entries(dataProvider.fields ?? {}),
+  );
+
+  const startColumns: readonly GridColDef<R>[] =
+    columnsProp ||
+    Array.from(fieldMap.keys(), (field: keyof R & string) => ({ field }));
+
+  const resolvedColumns = startColumns.map(function <
+    K extends keyof R & string,
+  >(baseColDef: GridColDef<R, R[K], string>): GridColDef<R, R[K], string> {
+    const dataProviderField: ResolvedField<R, K> | undefined = fieldMap.get(
+      baseColDef.field,
+    );
+    const colDef: GridColDef<R, R[K], string> = {
+      type: dataProviderField?.type,
+      headerName: dataProviderField?.label,
+      ...baseColDef,
+    };
+
+    const valueFormatter = dataProviderField?.valueFormatter;
+    if (valueFormatter && !colDef.valueFormatter) {
+      colDef.valueFormatter = (value) =>
+        valueFormatter(value, colDef.field as K);
+    }
+
+    if (dataProvider.updateOne) {
+      colDef.editable = true;
+    }
+
+    return colDef;
+  });
 
   return resolvedColumns.map((column) => {
     let valueGetter: GridValueGetter<R> | undefined = column.valueGetter;
@@ -101,15 +123,12 @@ export function DataGrid<R extends Datum>({
   const { data, loading, error } = useGetMany(dataProvider ?? null);
 
   const columns = React.useMemo(
-    () =>
-      dataProvider
-        ? getColumnsFromFields(dataProvider.fields, columnsProp)
-        : [],
+    () => getGridColDefsForDataProvider(dataProvider ?? null, columnsProp),
     [columnsProp, dataProvider],
   );
 
   const rows = React.useMemo(() => {
-    return data?.rows.map((row, index) => ({ ...row, _index: index })) ?? [];
+    return data?.rows ?? [];
   }, [data]);
 
   return (
