@@ -35,7 +35,12 @@ const CloseNotificationContext = React.createContext<CloseNotification>(() => {
 
 interface NotificationQueueEntry extends EnqueueNotificationOptions {
   key: string;
+  open: boolean;
   msg: React.ReactNode;
+}
+
+interface NotificationsState {
+  queue: NotificationQueueEntry[];
 }
 
 export interface NotificationsProviderProps {
@@ -45,18 +50,30 @@ export interface NotificationsProviderProps {
 export function NotificationsProvider({
   children,
 }: NotificationsProviderProps) {
-  const [queue, setQueue] = React.useState<NotificationQueueEntry[]>([]);
+  const [state, setState] = React.useState<NotificationsState>({ queue: [] });
 
   const enqueue = React.useCallback<EnqueueNotification>((msg, options) => {
     const key = options?.key ?? Math.random().toString(36).substring(7);
-    setQueue((prev) => [...prev, { msg, ...options, key }]);
+    setState((prev) => {
+      if (prev.queue.some((n) => n.key === key)) {
+        // deduplicate by key
+        return prev;
+      }
+      return {
+        ...prev,
+        queue: [...prev.queue, { msg, ...options, key, open: true }],
+      };
+    });
   }, []);
 
   const close = React.useCallback<CloseNotification>((key) => {
-    setQueue((prev) => prev.filter((n) => n.key !== key));
+    setState((prev) => ({
+      ...prev,
+      queue: prev.queue.filter((n) => n.key !== key),
+    }));
   }, []);
 
-  const currentNotification = queue[0] ?? null;
+  const currentNotification = state.queue[0] ?? null;
 
   const handleClose =
     (key: string) =>
@@ -75,12 +92,12 @@ export function NotificationsProvider({
         {currentNotification ? (
           <Snackbar
             key={currentNotification.key}
-            open
+            open={currentNotification.open}
             autoHideDuration={currentNotification.autoHideDuration}
             onClose={handleClose(currentNotification.key)}
           >
             <Badge
-              badgeContent={queue.length > 1 ? queue.length : null}
+              badgeContent={state.queue.length > 1 ? state.queue.length : null}
               color="primary"
             >
               <Alert
