@@ -134,6 +134,7 @@ export function useGetMany<R extends Datum>(
         : { rows: [] },
     enabled: !!dataProvider,
   });
+
   return React.useMemo(
     () => ({ data, error, loading, refetch }),
     [data, error, loading, refetch],
@@ -158,6 +159,7 @@ export function useGetOne<R extends Datum>(
     },
     enabled: !!dataProvider,
   });
+
   return React.useMemo(
     () => ({ data, error, loading, refetch }),
     [data, error, loading, refetch],

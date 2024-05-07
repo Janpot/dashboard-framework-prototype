@@ -4,7 +4,9 @@ import {
   DataGridPro,
   DataGridProProps,
   GridColDef,
+  GridProSlotsComponent,
   GridValueGetter,
+  useGridApiRef,
 } from "@mui/x-data-grid-pro";
 import React from "react";
 import { Box, styled } from "@mui/material";
@@ -16,6 +18,7 @@ import {
 } from "../data";
 import { ErrorOverlay, LoadingOverlay } from "../components";
 import { useNotifications } from "../useNotifications";
+import RowsLoadingOverlay from "./LoadingOverlay";
 
 const PlaceholderBorder = styled("div")(({ theme }) => ({
   position: "absolute",
@@ -116,12 +119,18 @@ export function DataGrid<R extends Datum>({
   dataProvider,
   columns: columnsProp,
   processRowUpdate: processRowUpdateProp,
+  slots: slotsProp,
+  apiRef: apiRefProp,
   ...props
 }: DataGridProps<R>) {
+  const gridApiRefOwn = useGridApiRef();
+  const apiRef = apiRefProp ?? gridApiRefOwn;
   const [mounted, setMounted] = React.useState(false);
   React.useEffect(() => {
     setMounted(true);
   }, []);
+
+  const [pendingMutation, setPendingMutation] = React.useState(false);
 
   const notifications = useNotifications();
 
@@ -144,28 +153,56 @@ export function DataGrid<R extends Datum>({
     }
     return async (updatedRow: R, originalRow: R): Promise<R> => {
       try {
+        setPendingMutation(true);
         const result = await updateOne(updatedRow.id, updatedRow);
+        const key = notifications.enqueue("Row updated", {
+          severity: "success",
+          actionText: "Show",
+          onAction: () => {
+            apiRef.current.setFilterModel({
+              items: [
+                { field: "id", operator: "equals", value: String(result.id) },
+              ],
+            });
+            notifications.close(key);
+          },
+        });
         return result;
       } catch (error) {
-        console.log("oh no", error);
         notifications.enqueue("Failed to update row", { severity: "error" });
         return originalRow;
       } finally {
+        setPendingMutation(false);
         refetch();
       }
     };
-  }, [dataProvider?.updateOne, notifications, processRowUpdateProp, refetch]);
+  }, [
+    apiRef,
+    dataProvider?.updateOne,
+    notifications,
+    processRowUpdateProp,
+    refetch,
+  ]);
+
+  const slots = React.useMemo<Partial<GridProSlotsComponent>>(
+    () => ({
+      loadingOverlay: RowsLoadingOverlay,
+      ...slotsProp,
+    }),
+    [slotsProp],
+  );
 
   return (
     <Box sx={{ height: 400, position: "relative" }}>
       {mounted ? (
         <>
           <DataGridPro
+            apiRef={apiRef}
             rows={rows}
             columns={columns}
-            loading={loading}
+            loading={loading || pendingMutation}
             processRowUpdate={processRowUpdate}
-            onProcessRowUpdateError={console.log}
+            slots={slots}
             {...props}
           />
           {error ? (
