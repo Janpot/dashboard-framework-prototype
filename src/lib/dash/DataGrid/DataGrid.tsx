@@ -219,8 +219,17 @@ export function DataGrid<R extends Datum>({
     }
     return async (updatedRow: R, originalRow: R): Promise<R> => {
       try {
+        const changes = Object.entries(updatedRow).filter(
+          ([key, value]) => value !== originalRow[key],
+        );
+        if (changes.length <= 0) {
+          return originalRow;
+        }
+        const changedValues: Partial<R> = Object.fromEntries(
+          changes,
+        ) as Partial<R>;
         setPendingMutation(true);
-        const result = await updateOne(updatedRow.id, updatedRow);
+        const result = await updateOne(updatedRow.id, changedValues);
         const key = notifications.enqueue("Row updated", {
           severity: "success",
           actionText: "Show",

@@ -54,7 +54,7 @@ export interface CreateOneMethod<R extends Datum> {
 }
 
 export interface UpdateOneMethod<R extends Datum> {
-  (id: ValidId, data: R): Promise<R>;
+  (id: ValidId, data: Partial<R>): Promise<R>;
 }
 
 export interface DeleteOneMethod {
@@ -201,7 +201,7 @@ export function useUpdateOne<R extends Datum>(
   dataProvider: ResolvedDataProvider<R> | null,
 ): Mutation<UpdateOneMethod<R>> {
   const { mutateAsync, error, isPending, reset } = useMutation({
-    async mutationFn([id, data]: [ValidId, R]) {
+    async mutationFn([id, data]: Parameters<UpdateOneMethod<R>>) {
       if (!dataProvider) {
         throw new Error("no dataProvider available");
       }
@@ -210,10 +210,8 @@ export function useUpdateOne<R extends Datum>(
     },
   });
 
-  const mutate = React.useCallback(
-    (id: ValidId, data: R) => {
-      return mutateAsync([id, data]);
-    },
+  const mutate = React.useCallback<UpdateOneMethod<R>>(
+    (id, data) => mutateAsync([id, data]),
     [mutateAsync],
   );
 
