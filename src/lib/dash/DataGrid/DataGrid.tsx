@@ -179,6 +179,20 @@ function getGridColDefsForDataProvider<R extends Datum>(
   return resolvedColumns;
 }
 
+function diff<R extends Record<PropertyKey, unknown>>(
+  original: R,
+  changed: R,
+): Partial<R> {
+  const keys = new Set([...Object.keys(original), ...Object.keys(changed)]);
+  const diff: Partial<R> = {};
+  for (const key of keys) {
+    if (original[key] !== changed[key]) {
+      (diff as any)[key] = changed[key];
+    }
+  }
+  return diff;
+}
+
 export function DataGrid<R extends Datum>({
   dataProvider,
   columns: columnsProp,
@@ -219,15 +233,11 @@ export function DataGrid<R extends Datum>({
     }
     return async (updatedRow: R, originalRow: R): Promise<R> => {
       try {
-        const changes = Object.entries(updatedRow).filter(
-          ([key, value]) => value !== originalRow[key],
-        );
-        if (changes.length <= 0) {
+        const changedValues = diff(originalRow, updatedRow);
+        if (Object.keys(changedValues).length <= 0) {
           return originalRow;
         }
-        const changedValues: Partial<R> = Object.fromEntries(
-          changes,
-        ) as Partial<R>;
+
         setPendingMutation(true);
         const result = await updateOne(updatedRow.id, changedValues);
         const key = notifications.enqueue("Row updated", {
