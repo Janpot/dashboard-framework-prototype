@@ -4,27 +4,55 @@ import {
   DataGridPro,
   DataGridProProps,
   GridColDef,
+  GridPinnedRowsProp,
+  GridPinnedColumnFields,
   GridProSlotsComponent,
   GridRowId,
+  GridRowModes,
+  GridRowModesModel,
+  GridToolbarColumnsButton,
+  GridToolbarContainer,
+  GridToolbarDensitySelector,
+  GridToolbarExport,
+  GridToolbarFilterButton,
+  GridToolbarProps,
   GridValueGetter,
   useGridApiRef,
+  GridRowParams,
+  GridActionsCellItemProps,
+  GridActionsCellItem,
+  GridApiPro,
 } from "@mui/x-data-grid-pro";
 import React from "react";
-import { Box, CircularProgress, IconButton, styled } from "@mui/material";
+import {
+  Box,
+  Button,
+  CircularProgress,
+  IconButton,
+  styled,
+} from "@mui/material";
 import {
   ResolvedDataProvider,
   ResolvedField,
   Datum,
   useGetMany,
-  useDeleteOne,
 } from "../data";
 import { ErrorOverlay, LoadingOverlay } from "../components";
 import { useNotifications } from "../useNotifications";
 import RowsLoadingOverlay from "./LoadingOverlay";
 import DeleteIcon from "@mui/icons-material/Delete";
+import AddIcon from "@mui/icons-material/Add";
+import EditIcon from "@mui/icons-material/Edit";
+import SaveIcon from "@mui/icons-material/Save";
+import CloseIcon from "@mui/icons-material/Close";
 import invariant from "invariant";
+import { useNonNullableContext } from "../utils";
 
-const ACTIONS_COLUMN_FIELD = "::toolpad-internal-field::actions";
+const ACTIONS_COLUMN_FIELD = "::toolpad-internal-field::actions::";
+
+const DRAFT_ROW_ID = "::toolpad-internal-row::draft::";
+
+const DRAFT_ROW_MARKER = Symbol("draft row");
 
 const PlaceholderBorder = styled("div")(({ theme }) => ({
   position: "absolute",
@@ -37,7 +65,10 @@ const PlaceholderBorder = styled("div")(({ theme }) => ({
 }));
 
 type ProcessRowUpdate = DataGridProProps["processRowUpdate"];
-type AutoSizeOptions = DataGridProProps["autosizeOptions"];
+
+type ActionRenderer<R extends Datum> = (
+  params: GridRowParams<R>,
+) => React.ReactElement<GridActionsCellItemProps> | null;
 
 export interface DataGridProps<R extends Datum>
   extends Omit<DataGridProProps<R>, "columns" | "rows"> {
@@ -110,25 +141,71 @@ function DeleteAction<R extends Datum>({
   );
 }
 
-function getGridColDefsForDataProvider<R extends Datum>(
-  dataProvider: ResolvedDataProvider<R> | null,
-  columnsProp?: readonly GridColDef<R>[],
-): readonly GridColDef<R>[] {
-  if (!dataProvider) {
-    return columnsProp ?? [];
+interface GridState {
+  editedRowId: GridRowId | null;
+  isProcessingRowUpdate: boolean;
+  rowModesModel: GridRowModesModel;
+}
+
+type GridAction =
+  | { kind: "START_ROW_EDIT"; rowId: GridRowId }
+  | { kind: "CANCEL_ROW_EDIT" }
+  | { kind: "START_ROW_UPDATE" }
+  | { kind: "END_ROW_UPDATE" };
+
+function gridEditingReducer(state: GridState, action: GridAction): GridState {
+  switch (action.kind) {
+    case "START_ROW_EDIT":
+      return {
+        ...state,
+        editedRowId: action.rowId,
+        rowModesModel: {
+          [action.rowId]: {
+            mode: GridRowModes.Edit,
+          },
+        },
+      };
+    case "CANCEL_ROW_EDIT":
+      return {
+        ...state,
+        editedRowId: null,
+        rowModesModel: state.editedRowId
+          ? {
+              [state.editedRowId]: {
+                mode: GridRowModes.View,
+                ignoreModifications: true,
+              },
+            }
+          : {},
+      };
+    case "START_ROW_UPDATE":
+      return {
+        ...state,
+        editedRowId: null,
+        isProcessingRowUpdate: true,
+        rowModesModel: {},
+      };
+    case "END_ROW_UPDATE":
+      return { ...state, isProcessingRowUpdate: false };
   }
+}
+
+function getGridColDefsForDataProvider<R extends Datum>(
+  dataProvider: ResolvedDataProvider<R>,
+  baseColumns: readonly GridColDef<R>[],
+  state: GridState,
+  dispatch: React.Dispatch<GridAction>,
+  apiRef: React.MutableRefObject<GridApiPro>,
+): readonly GridColDef<R>[] {
+  const isProcessingRowUpdate = false;
 
   const fieldMap = new Map<keyof R & string, ResolvedField<R, any>>(
     Object.entries(dataProvider.fields ?? {}),
   );
 
-  const startColumns: readonly GridColDef<R>[] =
-    columnsProp ||
-    Array.from(fieldMap.keys(), (field: keyof R & string) => ({ field }));
-
-  const resolvedColumns = startColumns.map(function <
-    K extends keyof R & string,
-  >(baseColDef: GridColDef<R, R[K], string>): GridColDef<R, R[K], string> {
+  const resolvedColumns = baseColumns.map(function <K extends keyof R & string>(
+    baseColDef: GridColDef<R, R[K], string>,
+  ): GridColDef<R, R[K], string> {
     const dataProviderField: ResolvedField<R, K> | undefined = fieldMap.get(
       baseColDef.field,
     );
@@ -144,7 +221,7 @@ function getGridColDefsForDataProvider<R extends Datum>(
         valueFormatter(value, colDef.field as K);
     }
 
-    if (dataProvider.updateOne) {
+    if (dataProvider.updateOne && colDef.field !== "id") {
       colDef.editable = true;
     }
 
@@ -160,23 +237,148 @@ function getGridColDefsForDataProvider<R extends Datum>(
     };
   });
 
-  if (dataProvider.deleteOne) {
+  const canEdit = !!dataProvider.updateOne;
+  const canDelete = !!dataProvider.deleteOne;
+  const canCreate = !!dataProvider.createOne;
+  const hasActionsColumn: boolean = canCreate || canEdit || canDelete;
+
+  if (hasActionsColumn) {
     resolvedColumns.push({
       field: ACTIONS_COLUMN_FIELD,
+      headerName: "Actions",
       type: "actions",
       align: "center",
       resizable: false,
       pinnable: false,
-      width: 50,
-      getActions: ({ id }) => {
-        return [
-          <DeleteAction key="delete" id={id} dataProvider={dataProvider} />,
-        ];
+      width: 100,
+      getActions: (params) => {
+        const actions: React.ReactElement<GridActionsCellItemProps>[] = [];
+
+        const isDraftRow = params.id === DRAFT_ROW_ID;
+        const isEditing = state.editedRowId !== null;
+        const isEditedRow = params.id === state.editedRowId;
+
+        if (isEditedRow || isProcessingRowUpdate) {
+          actions.push(
+            <GridActionsCellItem
+              key="save"
+              icon={
+                isProcessingRowUpdate ? (
+                  <CircularProgress size={16} />
+                ) : (
+                  <SaveIcon />
+                )
+              }
+              label="Save"
+              disabled={isProcessingRowUpdate}
+              onClick={() => {
+                dispatch({ kind: "START_ROW_UPDATE" });
+              }}
+            />,
+            <GridActionsCellItem
+              key="cancel"
+              icon={<CloseIcon />}
+              label="Cancel"
+              disabled={isProcessingRowUpdate}
+              onClick={() => {
+                dispatch({ kind: "CANCEL_ROW_EDIT" });
+              }}
+            />,
+          );
+        } else {
+          if (canEdit) {
+            actions.push(
+              <GridActionsCellItem
+                key="update"
+                icon={<EditIcon />}
+                label="Edit"
+                disabled={isEditing}
+                onClick={() => {
+                  dispatch({ kind: "START_ROW_EDIT", rowId: params.id });
+                }}
+              />,
+            );
+          }
+          if (canDelete) {
+            actions.push(
+              <DeleteAction
+                key="delete"
+                id={params.id}
+                dataProvider={dataProvider}
+              />,
+            );
+          }
+        }
+        return actions;
       },
     });
   }
 
   return resolvedColumns;
+}
+
+interface ToolbarCreateButtonContext {
+  slotsProp?: Partial<GridProSlotsComponent>;
+  onClick: () => void;
+  disabled: boolean;
+}
+
+const ToolbarCreateButtonContext =
+  React.createContext<ToolbarCreateButtonContext | null>(null);
+
+function ToolbarGridCreateButton() {
+  const { slotsProp, onClick, disabled } = useNonNullableContext(
+    ToolbarCreateButtonContext,
+  );
+  const ButtonComponent = slotsProp?.baseButton ?? Button;
+  return (
+    <ButtonComponent
+      color="primary"
+      startIcon={<AddIcon />}
+      onClick={onClick}
+      disabled={disabled}
+    >
+      Add record
+    </ButtonComponent>
+  );
+}
+
+function ToolbarGridToolbar() {
+  return (
+    <GridToolbarContainer>
+      <ToolbarGridCreateButton />
+      <GridToolbarColumnsButton />
+      <GridToolbarFilterButton />
+      <GridToolbarDensitySelector />
+      <GridToolbarExport />
+    </GridToolbarContainer>
+  );
+}
+
+function usePatchedRowModesModel(
+  rowModesModel: GridRowModesModel,
+): GridRowModesModel {
+  const prevRowModesModel = React.useRef(rowModesModel);
+  React.useEffect(() => {
+    prevRowModesModel.current = rowModesModel;
+  }, [rowModesModel]);
+
+  return React.useMemo(() => {
+    if (rowModesModel === prevRowModesModel.current) {
+      return rowModesModel;
+    }
+    const base = Object.fromEntries(
+      Object.keys(prevRowModesModel.current).map((rowId) => [
+        rowId,
+        { mode: GridRowModes.View },
+      ]),
+    );
+    return { ...base, ...rowModesModel };
+  }, [rowModesModel]);
+}
+
+interface DraftRow {
+  [DRAFT_ROW_MARKER]?: true;
 }
 
 function diff<R extends Record<PropertyKey, unknown>>(
@@ -193,16 +395,22 @@ function diff<R extends Record<PropertyKey, unknown>>(
   return diff;
 }
 
-export function DataGrid<R extends Datum>({
-  dataProvider,
-  columns: columnsProp,
-  processRowUpdate: processRowUpdateProp,
-  slots: slotsProp,
-  apiRef: apiRefProp,
-  initialState: initialStateProp,
-  autosizeOptions: autosizeOptionsProp,
-  ...props
-}: DataGridProps<R>) {
+export function DataGrid<R extends Datum>(propsIn: DataGridProps<R>) {
+  const {
+    dataProvider,
+    columns: columnsProp,
+    processRowUpdate: processRowUpdateProp,
+    slots: slotsProp,
+    apiRef: apiRefProp,
+    initialState: initialStateProp,
+    autosizeOptions: autosizeOptionsProp,
+    getRowId: getRowIdProp,
+    rowModesModel: rowModesModelProp,
+    pinnedRows: pinnedRowsProp,
+    pinnedColumns: pinnedColumnsProp,
+    ...props
+  } = propsIn;
+
   const gridApiRefOwn = useGridApiRef();
   const apiRef = apiRefProp ?? gridApiRefOwn;
   const [mounted, setMounted] = React.useState(false);
@@ -210,18 +418,33 @@ export function DataGrid<R extends Datum>({
     setMounted(true);
   }, []);
 
-  const [pendingMutation, setPendingMutation] = React.useState(false);
+  const [editingState, dispatchEditingAction] = React.useReducer(
+    gridEditingReducer,
+    {
+      editedRowId: null,
+      isProcessingRowUpdate: false,
+      rowModesModel: {},
+    },
+  );
+
+  const handleCreateRowRequest = React.useCallback(() => {
+    dispatchEditingAction({ kind: "START_ROW_EDIT", rowId: DRAFT_ROW_ID });
+  }, []);
+
+  const [isProcessingRowUpdate, setIsProcessingRowUpdate] =
+    React.useState(false);
 
   const notifications = useNotifications();
 
   const { data, loading, error, refetch } = useGetMany(dataProvider ?? null);
 
-  const columns = React.useMemo(
-    () => getGridColDefsForDataProvider(dataProvider ?? null, columnsProp),
-    [columnsProp, dataProvider],
-  );
-
-  const rows = React.useMemo(() => data?.rows ?? [], [data]);
+  const rows = React.useMemo(() => {
+    const renderedRows = data?.rows ?? [];
+    if (editingState.editedRowId === DRAFT_ROW_ID) {
+      return [{ [DRAFT_ROW_MARKER]: true }, ...renderedRows];
+    }
+    return renderedRows;
+  }, [data?.rows, editingState.editedRowId]);
 
   const processRowUpdate = React.useMemo<ProcessRowUpdate>(() => {
     if (processRowUpdateProp) {
@@ -233,12 +456,13 @@ export function DataGrid<R extends Datum>({
     }
     return async (updatedRow: R, originalRow: R): Promise<R> => {
       try {
+        console.log("processing", updatedRow, originalRow);
         const changedValues = diff(originalRow, updatedRow);
         if (Object.keys(changedValues).length <= 0) {
           return originalRow;
         }
 
-        setPendingMutation(true);
+        setIsProcessingRowUpdate(true);
         const result = await updateOne(updatedRow.id, changedValues);
         const key = notifications.enqueue("Row updated", {
           severity: "success",
@@ -257,7 +481,7 @@ export function DataGrid<R extends Datum>({
         notifications.enqueue("Failed to update row", { severity: "error" });
         return originalRow;
       } finally {
-        setPendingMutation(false);
+        setIsProcessingRowUpdate(false);
         refetch();
       }
     };
@@ -272,47 +496,105 @@ export function DataGrid<R extends Datum>({
   const slots = React.useMemo<Partial<GridProSlotsComponent>>(
     () => ({
       loadingOverlay: RowsLoadingOverlay,
+      toolbar: ToolbarGridToolbar,
       ...slotsProp,
     }),
     [slotsProp],
   );
 
-  const initialState = {
-    ...initialStateProp,
-    pinnedColumns: {
-      ...initialStateProp?.pinnedColumns,
-      right: [
-        ...(initialStateProp?.pinnedColumns?.right ?? []),
-        ACTIONS_COLUMN_FIELD,
-      ],
+  const createButtonContext = React.useMemo(() => {
+    return {
+      slotsProp,
+      onClick: () => {
+        handleCreateRowRequest();
+      },
+      disabled: !!editingState.editedRowId,
+    };
+  }, [editingState.editedRowId, handleCreateRowRequest, slotsProp]);
+
+  const getRowId = React.useCallback(
+    (row: R & DraftRow) => {
+      if (row[DRAFT_ROW_MARKER]) {
+        return DRAFT_ROW_ID;
+      }
+      if (getRowIdProp) {
+        return getRowIdProp(row);
+      }
+      return row.id;
     },
-  };
+    [getRowIdProp],
+  );
+
+  // Remove when https://github.com/mui/mui-x/issues/11423 is fixed
+  const rowModesModelPatched = usePatchedRowModesModel(
+    editingState.rowModesModel ?? {},
+  );
+
+  const handleRowModesModelChange = React.useCallback(
+    (model: GridRowModesModel) => {
+      console.log("hello", model);
+    },
+    [],
+  );
+
+  // Leave this to the user
+  const pinnedColumns: GridPinnedColumnFields = React.useMemo(
+    () => ({
+      ...pinnedColumnsProp,
+      right: [...(pinnedColumnsProp?.right ?? []), ACTIONS_COLUMN_FIELD],
+    }),
+    [pinnedColumnsProp],
+  );
+
+  const columns = React.useMemo(() => {
+    if (!dataProvider) {
+      return columnsProp ?? [];
+    }
+
+    const baseColumns =
+      columnsProp ??
+      Object.keys(dataProvider.fields).map((field) => ({ field }));
+
+    return getGridColDefsForDataProvider(
+      dataProvider,
+      baseColumns,
+      editingState,
+      dispatchEditingAction,
+      apiRef,
+    );
+  }, [apiRef, columnsProp, dataProvider, editingState]);
 
   return (
-    <Box sx={{ height: 400, position: "relative" }}>
-      {mounted ? (
-        <>
-          <DataGridPro
-            apiRef={apiRef}
-            rows={rows}
-            columns={columns}
-            loading={loading || pendingMutation}
-            processRowUpdate={processRowUpdate}
-            slots={slots}
-            initialState={initialState}
-            {...props}
-          />
-          {error ? (
-            <PlaceholderBorder>
-              <ErrorOverlay error={error} />
-            </PlaceholderBorder>
-          ) : null}
-        </>
-      ) : (
-        <PlaceholderBorder>
-          <LoadingOverlay />
-        </PlaceholderBorder>
-      )}
-    </Box>
+    <ToolbarCreateButtonContext.Provider value={createButtonContext}>
+      <Box sx={{ height: 400, position: "relative" }}>
+        {mounted ? (
+          <>
+            <DataGridPro
+              apiRef={apiRef}
+              rows={rows}
+              columns={columns}
+              loading={loading || isProcessingRowUpdate}
+              processRowUpdate={processRowUpdate}
+              slots={slots}
+              rowModesModel={rowModesModelPatched}
+              onRowModesModelChange={handleRowModesModelChange}
+              getRowId={getRowId}
+              {...props}
+              // TODO: can we make this optional?
+              editMode="row"
+            />
+            {error ? (
+              <PlaceholderBorder>
+                <ErrorOverlay error={error} />
+              </PlaceholderBorder>
+            ) : null}
+          </>
+        ) : (
+          <PlaceholderBorder>
+            <LoadingOverlay />
+          </PlaceholderBorder>
+        )}
+      </Box>
+    </ToolbarCreateButtonContext.Provider>
   );
 }
