@@ -161,6 +161,9 @@ type GridAction =
 function gridEditingReducer(state: GridState, action: GridAction): GridState {
   switch (action.kind) {
     case "START_ROW_EDIT":
+      if (state.editedRowId !== null) {
+        return state;
+      }
       return {
         ...state,
         editedRowId: action.rowId,
