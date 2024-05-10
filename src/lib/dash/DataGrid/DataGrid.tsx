@@ -16,10 +16,10 @@ import {
   GridToolbarFilterButton,
   GridValueGetter,
   useGridApiRef,
-  GridRowParams,
   GridActionsCellItemProps,
   GridActionsCellItem,
   GridApiPro,
+  GridEventListener,
 } from "@mui/x-data-grid-pro";
 import React from "react";
 import { Box, Button, CircularProgress, styled } from "@mui/material";
@@ -570,7 +570,9 @@ export function DataGrid<R extends Datum>(propsIn: DataGridProps<R>) {
     editingState.rowModesModel ?? {},
   );
 
-  const handleRowEditStart = React.useCallback((params) => {
+  const handleRowEditStart = React.useCallback<
+    GridEventListener<"rowEditStart">
+  >((params) => {
     if (params.reason === "cellDoubleClick") {
       dispatchEditingAction({ kind: "START_ROW_EDIT", rowId: params.id });
     }
