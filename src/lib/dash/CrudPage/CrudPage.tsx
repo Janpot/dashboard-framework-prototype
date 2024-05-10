@@ -34,7 +34,7 @@ import { Controller, DefaultValues, Path, useForm } from "react-hook-form";
 import { LoadingButton } from "@mui/lab";
 import { useNavigate } from "../navigation";
 import Grid2 from "@mui/material/Unstable_Grid2";
-import { GridEventListener } from "@mui/x-data-grid-pro";
+import { GridEventListener } from "@mui/x-data-grid";
 import { ErrorOverlay, LoadingOverlay } from "../components";
 import { useDialogs } from "../useDialogs";
 

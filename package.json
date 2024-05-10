@@ -18,7 +18,7 @@
     "@mui/material-nextjs": "^5.15.11",
     "@mui/utils": "^5.15.14",
     "@mui/x-charts": "^7.3.0",
-    "@mui/x-data-grid-pro": "^7.3.0",
+    "@mui/x-data-grid": "^7.3.2",
     "@mui/x-date-pickers": "^7.2.0",
     "@mui/x-date-pickers-pro": "^7.2.0",
     "@tanstack/react-query": "^5.29.2",
@@ -47,5 +47,6 @@
   "devDependencies": {
     "@types/invariant": "^2.2.37",
     "@types/pg": "^8.11.5"
-  }
+  },
+  "packageManager": "pnpm@9.1.0"
 }

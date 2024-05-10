@@ -1,11 +1,11 @@
 "use client";
 
 import {
-  DataGridPro,
-  DataGridProProps,
+  DataGrid as XDataGrid,
+  DataGridProps as XDataGridProps,
   GridColDef,
   GridPinnedColumnFields,
-  GridProSlotsComponent,
+  GridSlotsComponent,
   GridRowId,
   GridRowModes,
   GridRowModesModel,
@@ -18,9 +18,9 @@ import {
   useGridApiRef,
   GridActionsCellItemProps,
   GridActionsCellItem,
-  GridApiPro,
+  GridApi,
   GridEventListener,
-} from "@mui/x-data-grid-pro";
+} from "@mui/x-data-grid";
 import React from "react";
 import { Box, Button, CircularProgress, styled } from "@mui/material";
 import {
@@ -73,10 +73,10 @@ const PlaceholderBorder = styled("div")(({ theme }) => ({
   borderRadius: theme.shape.borderRadius,
 }));
 
-type ProcessRowUpdate = DataGridProProps["processRowUpdate"];
+type ProcessRowUpdate = XDataGridProps["processRowUpdate"];
 
 export interface DataGridProps<R extends Datum>
-  extends Omit<DataGridProProps<R>, "columns" | "rows"> {
+  extends Omit<XDataGridProps<R>, "columns" | "rows"> {
   rows?: readonly R[];
   columns?: readonly GridColDef<R>[];
   dataProvider?: ResolvedDataProvider<R>;
@@ -200,7 +200,7 @@ function getGridColDefsForDataProvider<R extends Datum>(
   baseColumns: readonly GridColDef<R>[],
   state: GridState,
   dispatch: React.Dispatch<GridAction>,
-  apiRef: React.MutableRefObject<GridApiPro>,
+  apiRef: React.MutableRefObject<GridApi>,
 ): readonly GridColDef<R>[] {
   const isProcessingRowUpdate = false;
 
@@ -322,7 +322,7 @@ function getGridColDefsForDataProvider<R extends Datum>(
 }
 
 interface ToolbarCreateButtonContext {
-  slotsProp?: Partial<GridProSlotsComponent>;
+  slotsProp?: Partial<GridSlotsComponent>;
   onClick: () => void;
   disabled: boolean;
 }
@@ -533,7 +533,7 @@ export function DataGrid<R extends Datum>(propsIn: DataGridProps<R>) {
     refetch,
   ]);
 
-  const slots = React.useMemo<Partial<GridProSlotsComponent>>(
+  const slots = React.useMemo<Partial<GridSlotsComponent>>(
     () => ({
       loadingOverlay: RowsLoadingOverlay,
       toolbar: ToolbarGridToolbar,
@@ -610,7 +610,7 @@ export function DataGrid<R extends Datum>(propsIn: DataGridProps<R>) {
       <Box sx={{ height: 400, position: "relative" }}>
         {mounted ? (
           <>
-            <DataGridPro
+            <XDataGrid
               apiRef={apiRef}
               rows={rows}
               columns={columns}

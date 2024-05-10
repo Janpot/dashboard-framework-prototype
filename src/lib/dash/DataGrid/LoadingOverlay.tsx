@@ -7,7 +7,7 @@ import {
   useGridApiContext,
   useGridRootProps,
   useGridSelector,
-} from "@mui/x-data-grid-pro";
+} from "@mui/x-data-grid";
 
 // Pseudo random number. See https://stackoverflow.com/a/47593316
 function mulberry32(a: number): () => number {
