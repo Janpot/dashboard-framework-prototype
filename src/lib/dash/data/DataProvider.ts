@@ -28,12 +28,25 @@ export interface FieldDef<
   valueFormatter?: ValueFormatter<R, K>;
 }
 
+export interface IndexPagination {
+  start: number;
+  pageSize: number;
+}
+
+export type Pagination = IndexPagination;
+
 export interface GetManyParams<R extends Datum> {
-  filter: Filter<R>;
+  pagination?: Pagination;
+  filter?: Filter<R>;
+}
+
+export interface GetManyResult<R extends Datum> {
+  rows: R[];
+  totalCount: number;
 }
 
 export interface GetManyMethod<R extends Datum> {
-  (params: GetManyParams<R>): Promise<{ rows: R[] }>;
+  (params: GetManyParams<R>): Promise<GetManyResult<R>>;
 }
 
 export interface ResolvedField<
@@ -115,11 +128,28 @@ export interface Query<R> {
   refetch: () => void;
 }
 
+function getKeyFromPagination(pagination: Pagination): string {
+  return `${pagination.start}-${pagination.pageSize}`;
+}
+
+function getKeyForParams(params: GetManyParams<any> = {}): string[] {
+  return [
+    params.filter ? getKeyFromFilter(params.filter) : "",
+    params.pagination ? getKeyFromPagination(params.pagination) : "",
+  ];
+}
+
 export function useGetMany<R extends Datum>(
   dataProvider: ResolvedDataProvider<R> | null,
-): Query<{ rows: R[] }> {
-  const key = dataProvider ? getObjectKey(dataProvider) : null;
-  const filter = useAppliedFilter(dataProvider);
+  params: GetManyParams<R> = {},
+): Query<GetManyResult<R>> {
+  const providerKey = dataProvider ? getObjectKey(dataProvider) : null;
+  const environmentFilter = useAppliedFilter(dataProvider);
+
+  const resolvedParams = React.useMemo(() => {
+    const filter = { ...environmentFilter, ...params?.filter };
+    return { ...params, filter };
+  }, [environmentFilter, params]);
 
   const {
     data,
@@ -127,11 +157,11 @@ export function useGetMany<R extends Datum>(
     isLoading: loading,
     refetch,
   } = useQuery({
-    queryKey: ["getMany", key, getKeyFromFilter(filter)],
-    queryFn: () =>
-      dataProvider
-        ? dataProvider.getMany({ filter: filter ?? [] })
-        : { rows: [] },
+    queryKey: ["getMany", providerKey, ...getKeyForParams(resolvedParams)],
+    queryFn: () => {
+      invariant(dataProvider?.getMany, "getMany not implemented");
+      return dataProvider.getMany(resolvedParams);
+    },
     enabled: !!dataProvider,
   });
 

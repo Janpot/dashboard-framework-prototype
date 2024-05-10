@@ -1,6 +1,8 @@
 "use client";
 
 import { createDataProvider } from "@toolpad/dashboard";
+import { faker } from "@faker-js/faker";
+import invariant from "invariant";
 
 export type Employee = {
   id: number;
@@ -12,47 +14,52 @@ export type Employee = {
 
 let nextId = 1;
 const getNextId = () => nextId++;
-const DATA: Employee[] = [
-  {
-    id: getNextId(),
-    name: "John Doe",
-    age: 25,
-    active: true,
-    lastContacted: new Date(),
-  },
-  {
-    id: getNextId(),
-    name: "Jane Doe",
-    age: 21,
-    active: false,
-    lastContacted: new Date(),
-  },
-];
+const DATA: Employee[] = Array.from(Array(10000), () => ({
+  id: getNextId(),
+  name: faker.person.fullName(),
+  age: faker.number.int({ min: 18, max: 65 }),
+  active: faker.datatype.boolean(),
+  lastContacted: faker.date.recent(),
+}));
+
+const delay = async (ms: number) =>
+  new Promise((resolve) => setTimeout(resolve, ms));
 
 export const employees = createDataProvider<Employee>({
-  async getMany({ filter }) {
+  async getMany({ filter, pagination }) {
+    await delay(500);
+    invariant(pagination, "Pagination is required");
     return {
-      rows: DATA,
+      rows: DATA.slice(
+        pagination.start,
+        pagination.start + pagination.pageSize,
+      ),
+      totalCount: DATA.length,
     };
   },
   async getOne(id) {
+    await delay(500);
     return DATA.find((row) => row.id === Number(id)) ?? null;
   },
   async createOne(values) {
+    await delay(500);
     const newRow = { ...values, id: getNextId() };
     DATA.push(newRow);
     return newRow;
   },
   async updateOne(id, values) {
+    await delay(500);
     const index = DATA.findIndex((row) => row.id === Number(id));
     if (index < 0) {
       throw new Error(`Employee with id ${id} not found`);
     }
 
     DATA[index] = { ...DATA[index], ...values };
+
     return DATA[index];
   },
   async deleteOne(id) {
+    await delay(500);
     const index = DATA.findIndex((row) => row.id === Number(id));
     if (index >= 0) {
       DATA.splice(index, 1);

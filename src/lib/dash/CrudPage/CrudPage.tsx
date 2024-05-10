@@ -135,7 +135,10 @@ function ListPage<R extends Datum>({}: ListPageProps) {
     [basePath, navigate],
   );
 
-  const { data, loading, error, refetch } = useGetMany(dataProvider ?? null);
+  const { data, loading, error, refetch } = useGetMany(
+    dataProvider ?? null,
+    {},
+  );
 
   const columns = React.useMemo(() => {
     let gridColumns: readonly GridColDef<R>[] = Object.keys(

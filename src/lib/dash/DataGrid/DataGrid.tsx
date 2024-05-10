@@ -18,6 +18,7 @@ import {
   GridActionsCellItemProps,
   GridActionsCellItem,
   GridEventListener,
+  GridPaginationModel,
 } from "@mui/x-data-grid";
 import React from "react";
 import { Box, Button, CircularProgress, styled } from "@mui/material";
@@ -26,6 +27,7 @@ import {
   ResolvedField,
   Datum,
   useGetMany,
+  GetManyParams,
 } from "../data";
 import { ErrorOverlay, LoadingOverlay } from "../components";
 import { useNotifications } from "../useNotifications";
@@ -438,6 +440,12 @@ export function DataGrid<R extends Datum>(propsIn: DataGridProps<R>) {
     setMounted(true);
   }, []);
 
+  const [gridPaginationModel, setGridPaginationModel] =
+    React.useState<GridPaginationModel>({
+      pageSize: 10,
+      page: 0,
+    });
+
   const [editingState, dispatchEditingAction] = React.useReducer(
     gridEditingReducer,
     {
@@ -456,7 +464,21 @@ export function DataGrid<R extends Datum>(propsIn: DataGridProps<R>) {
 
   const notifications = useNotifications();
 
-  const { data, loading, error, refetch } = useGetMany(dataProvider ?? null);
+  const useGetManyParams = React.useMemo<GetManyParams<R>>(
+    () => ({
+      pagination: {
+        start: gridPaginationModel.page * gridPaginationModel.pageSize,
+        pageSize: gridPaginationModel.pageSize,
+      },
+      filter: {},
+    }),
+    [gridPaginationModel.page, gridPaginationModel.pageSize],
+  );
+
+  const { data, loading, error, refetch } = useGetMany(
+    dataProvider ?? null,
+    useGetManyParams,
+  );
 
   const rows = React.useMemo(() => {
     const renderedRows = data?.rows ?? [];
@@ -628,18 +650,23 @@ export function DataGrid<R extends Datum>(propsIn: DataGridProps<R>) {
         {mounted ? (
           <>
             <XDataGrid
+              pagination
               apiRef={apiRef}
               rows={rows}
               columns={columns}
-              loading={loading || isProcessingRowUpdate}
+              loading={loading}
               processRowUpdate={processRowUpdate}
               slots={slots}
               rowModesModel={rowModesModelPatched}
               onRowEditStart={handleRowEditStart}
               getRowId={getRowId}
+              paginationModel={gridPaginationModel}
+              onPaginationModelChange={setGridPaginationModel}
+              rowCount={data?.totalCount ?? 0}
               {...props}
-              // TODO: can we make this optional?
+              // TODO: How can we make these optional?
               editMode="row"
+              paginationMode="server"
             />
             {error ? (
               <PlaceholderBorder>

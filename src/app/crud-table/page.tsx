@@ -5,5 +5,5 @@ import { DataGrid } from "@toolpad/dashboard";
 import { employees } from "./data";
 
 export default function Page() {
-  return <DataGrid dataProvider={employees} />;
+  return <DataGrid dataProvider={employees} pageSizeOptions={[10, 25, 100]} />;
 }
