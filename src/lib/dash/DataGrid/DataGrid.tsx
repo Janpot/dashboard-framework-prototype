@@ -4,7 +4,6 @@ import {
   DataGrid as XDataGrid,
   DataGridProps as XDataGridProps,
   GridColDef,
-  GridPinnedColumnFields,
   GridSlotsComponent,
   GridRowId,
   GridRowModes,
@@ -195,14 +194,10 @@ function gridEditingReducer(state: GridState, action: GridAction): GridState {
   }
 }
 
-function getGridColDefsForDataProvider<R extends Datum>(
+function updateColumnsWithDataProviderFields<R extends Datum>(
   dataProvider: ResolvedDataProvider<R>,
   baseColumns: readonly GridColDef<R>[],
-  state: GridState,
-  dispatch: React.Dispatch<GridAction>,
 ): readonly GridColDef<R>[] {
-  const isProcessingRowUpdate = false;
-
   const fieldMap = new Map<keyof R & string, ResolvedField<R, any>>(
     Object.entries(dataProvider.fields ?? {}),
   );
@@ -225,10 +220,6 @@ function getGridColDefsForDataProvider<R extends Datum>(
         valueFormatter(value, colDef.field as K);
     }
 
-    if (dataProvider.updateOne && colDef.field !== "id") {
-      colDef.editable = true;
-    }
-
     let valueGetter: GridValueGetter<R> | undefined = colDef.valueGetter;
 
     if (colDef.type === "date" || colDef.type === "dateTime") {
@@ -241,10 +232,32 @@ function getGridColDefsForDataProvider<R extends Datum>(
     };
   });
 
+  return resolvedColumns;
+}
+
+function updateColumnsWithDataProviderEditing<R extends Datum>(
+  dataProvider: ResolvedDataProvider<R>,
+  baseColumns: readonly GridColDef<R>[],
+  state: GridState,
+  dispatch: React.Dispatch<GridAction>,
+): readonly GridColDef<R>[] {
   const canEdit = !!dataProvider.updateOne;
   const canDelete = !!dataProvider.deleteOne;
   const canCreate = !!dataProvider.createOne;
+  const hasEditableRows = canCreate || canEdit;
   const hasActionsColumn: boolean = canCreate || canEdit || canDelete;
+
+  const resolvedColumns = baseColumns.map(function <K extends keyof R & string>(
+    baseColDef: GridColDef<R, R[K], string>,
+  ): GridColDef<R, R[K], string> {
+    const colDef = { ...baseColDef };
+
+    if (hasEditableRows && colDef.field !== "id") {
+      colDef.editable = true;
+    }
+
+    return colDef;
+  });
 
   if (hasActionsColumn) {
     resolvedColumns.push({
@@ -261,19 +274,19 @@ function getGridColDefsForDataProvider<R extends Datum>(
         const isEditing = state.editedRowId !== null;
         const isEditedRow = params.id === state.editedRowId;
 
-        if (isEditedRow || isProcessingRowUpdate) {
+        if (isEditedRow || state.isProcessingRowUpdate) {
           actions.push(
             <GridActionsCellItem
               key="save"
               icon={
-                isProcessingRowUpdate ? (
+                state.isProcessingRowUpdate ? (
                   <CircularProgress size={16} />
                 ) : (
                   <SaveIcon />
                 )
               }
               label="Save"
-              disabled={isProcessingRowUpdate}
+              disabled={state.isProcessingRowUpdate}
               onClick={() => {
                 dispatch({ kind: "START_ROW_UPDATE" });
               }}
@@ -282,7 +295,7 @@ function getGridColDefsForDataProvider<R extends Datum>(
               key="cancel"
               icon={<CloseIcon />}
               label="Cancel"
-              disabled={isProcessingRowUpdate}
+              disabled={state.isProcessingRowUpdate}
               onClick={() => {
                 dispatch({ kind: "CANCEL_ROW_EDIT" });
               }}
@@ -577,30 +590,28 @@ export function DataGrid<R extends Datum>(propsIn: DataGridProps<R>) {
     }
   }, []);
 
-  // Leave this to the user
-  const pinnedColumns: GridPinnedColumnFields = React.useMemo(
-    () => ({
-      ...pinnedColumnsProp,
-      right: [...(pinnedColumnsProp?.right ?? []), ACTIONS_COLUMN_FIELD],
-    }),
-    [pinnedColumnsProp],
-  );
-
   const columns = React.useMemo(() => {
     if (!dataProvider) {
       return columnsProp ?? [];
     }
 
-    const baseColumns =
+    let gridColumns =
       columnsProp ??
       Object.keys(dataProvider.fields).map((field) => ({ field }));
 
-    return getGridColDefsForDataProvider(
+    gridColumns = updateColumnsWithDataProviderFields(
       dataProvider,
-      baseColumns,
+      gridColumns,
+    );
+
+    gridColumns = updateColumnsWithDataProviderEditing(
+      dataProvider,
+      gridColumns,
       editingState,
       dispatchEditingAction,
     );
+
+    return gridColumns;
   }, [columnsProp, dataProvider, editingState]);
 
   return (
