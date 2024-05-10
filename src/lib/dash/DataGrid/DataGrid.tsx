@@ -112,8 +112,8 @@ function DeleteAction<R extends Datum>({
   id,
   dataProvider,
 }: DeleteActionProps<R>) {
+  const refetch = useNonNullableContext(RefetchContext);
   const [pending, setPending] = React.useState(false);
-  const { refetch } = useGetMany(dataProvider);
 
   const notifications = useNotifications();
 
@@ -122,7 +122,10 @@ function DeleteAction<R extends Datum>({
       setPending(true);
       invariant(dataProvider.deleteOne, "deleteOne not implemented");
       await dataProvider.deleteOne(id);
-      notifications.enqueue("Row deleted", { severity: "success" });
+      notifications.enqueue("Row deleted", {
+        severity: "success",
+        autoHideDuration: 5000,
+      });
     } catch (error) {
       notifications.enqueue("Failed to delete row", { severity: "error" });
     } finally {
@@ -347,6 +350,8 @@ interface ToolbarCreateButtonContext {
 const ToolbarCreateButtonContext =
   React.createContext<ToolbarCreateButtonContext | null>(null);
 
+const RefetchContext = React.createContext<(() => void) | null>(null);
+
 function ToolbarGridCreateButton() {
   const { slotsProp, onClick, disabled } = useNonNullableContext(
     ToolbarCreateButtonContext,
@@ -475,10 +480,12 @@ export function DataGrid<R extends Datum>(propsIn: DataGridProps<R>) {
     [gridPaginationModel.page, gridPaginationModel.pageSize],
   );
 
-  const { data, loading, error, refetch } = useGetMany(
-    dataProvider ?? null,
-    useGetManyParams,
-  );
+  const {
+    data,
+    loading: loading,
+    error,
+    refetch,
+  } = useGetMany(dataProvider ?? null, useGetManyParams);
 
   const rows = React.useMemo(() => {
     const renderedRows = data?.rows ?? [];
@@ -517,6 +524,7 @@ export function DataGrid<R extends Datum>(propsIn: DataGridProps<R>) {
           const key = notifications.enqueue("Row created", {
             severity: "success",
             actionText: "Show",
+            autoHideDuration: 5000,
             onAction: () => {
               apiRef.current.setFilterModel({
                 items: [
@@ -545,6 +553,7 @@ export function DataGrid<R extends Datum>(propsIn: DataGridProps<R>) {
 
           const key = notifications.enqueue("Row updated", {
             severity: "success",
+            autoHideDuration: 5000,
             actionText: "Show",
             onAction: () => {
               apiRef.current.setFilterModel({
@@ -587,9 +596,9 @@ export function DataGrid<R extends Datum>(propsIn: DataGridProps<R>) {
       onClick: () => {
         handleCreateRowRequest();
       },
-      disabled: !!editingState.editedRowId,
+      disabled: !!editingState.editedRowId || loading,
     };
-  }, [editingState.editedRowId, handleCreateRowRequest, slotsProp]);
+  }, [editingState.editedRowId, handleCreateRowRequest, loading, slotsProp]);
 
   const getRowId = React.useCallback(
     (row: R) => {
@@ -642,41 +651,43 @@ export function DataGrid<R extends Datum>(propsIn: DataGridProps<R>) {
   }, [columnsProp, dataProvider, editingState]);
 
   return (
-    <ToolbarCreateButtonContext.Provider value={createButtonContext}>
-      <Box sx={{ height: 400, position: "relative" }}>
-        {mounted ? (
-          <>
-            <XDataGrid
-              pagination
-              apiRef={apiRef}
-              rows={rows}
-              columns={columns}
-              loading={loading}
-              processRowUpdate={processRowUpdate}
-              slots={slots}
-              rowModesModel={rowModesModelPatched}
-              onRowEditStart={handleRowEditStart}
-              getRowId={getRowId}
-              paginationModel={gridPaginationModel}
-              onPaginationModelChange={setGridPaginationModel}
-              rowCount={data?.totalCount ?? 0}
-              {...props}
-              // TODO: How can we make these optional?
-              editMode="row"
-              paginationMode="server"
-            />
-            {error ? (
-              <PlaceholderBorder>
-                <ErrorOverlay error={error} />
-              </PlaceholderBorder>
-            ) : null}
-          </>
-        ) : (
-          <PlaceholderBorder>
-            <LoadingOverlay />
-          </PlaceholderBorder>
-        )}
-      </Box>
-    </ToolbarCreateButtonContext.Provider>
+    <RefetchContext.Provider value={refetch}>
+      <ToolbarCreateButtonContext.Provider value={createButtonContext}>
+        <Box sx={{ height: 400, position: "relative" }}>
+          {mounted ? (
+            <>
+              <XDataGrid
+                pagination
+                apiRef={apiRef}
+                rows={rows}
+                columns={columns}
+                loading={loading}
+                processRowUpdate={processRowUpdate}
+                slots={slots}
+                rowModesModel={rowModesModelPatched}
+                onRowEditStart={handleRowEditStart}
+                getRowId={getRowId}
+                paginationModel={gridPaginationModel}
+                onPaginationModelChange={setGridPaginationModel}
+                rowCount={data?.totalCount ?? 0}
+                {...props}
+                // TODO: How can we make these optional?
+                editMode="row"
+                paginationMode="server"
+              />
+              {error ? (
+                <PlaceholderBorder>
+                  <ErrorOverlay error={error} />
+                </PlaceholderBorder>
+              ) : null}
+            </>
+          ) : (
+            <PlaceholderBorder>
+              <LoadingOverlay />
+            </PlaceholderBorder>
+          )}
+        </Box>
+      </ToolbarCreateButtonContext.Provider>
+    </RefetchContext.Provider>
   );
 }

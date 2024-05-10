@@ -22,7 +22,7 @@ export function LineChart<R extends Datum>({
   series,
 }: LineChartProps<R>) {
   const theme = useTheme();
-  const { data, loading, error } = useGetMany(dataProvider);
+  const { data, loading: loading, error } = useGetMany(dataProvider);
   const resolvedXAxis = React.useMemo(() => {
     return (
       xAxis?.map((axis) => {

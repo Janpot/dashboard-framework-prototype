@@ -49,7 +49,7 @@ export function Metric<R extends Datum>({
   field,
   aggregation = "latest",
 }: MetricProps<R>) {
-  const { data, loading, error } = useGetMany(dataProvider);
+  const { data, loading: loading, error } = useGetMany(dataProvider);
 
   const fieldDef = React.useMemo(() => {
     return dataProvider.fields[field];

@@ -19,7 +19,7 @@ export function BarChart<R extends Datum>({
   xAxis,
   series,
 }: BarChartProps<R>) {
-  const { data, loading, error } = useGetMany(dataProvider);
+  const { data, loading: loading, error } = useGetMany(dataProvider);
   const resolvedXAxis = React.useMemo(() => {
     return (
       xAxis?.map((axis) => {

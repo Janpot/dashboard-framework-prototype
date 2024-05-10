@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useMutation, useQuery } from "@tanstack/react-query";
 import { Filter, getKeyFromFilter, useAppliedFilter } from "../filter";
 import { getObjectKey } from "../utils";
 import invariant from "invariant";
@@ -151,19 +151,18 @@ export function useGetMany<R extends Datum>(
     return { ...params, filter };
   }, [environmentFilter, params]);
 
-  const {
-    data,
-    error,
-    isLoading: loading,
-    refetch,
-  } = useQuery({
-    queryKey: ["getMany", providerKey, ...getKeyForParams(resolvedParams)],
-    queryFn: () => {
-      invariant(dataProvider?.getMany, "getMany not implemented");
-      return dataProvider.getMany(resolvedParams);
-    },
-    enabled: !!dataProvider,
-  });
+  const { data, error, isLoading, isPlaceholderData, isFetching, refetch } =
+    useQuery({
+      queryKey: ["getMany", providerKey, ...getKeyForParams(resolvedParams)],
+      queryFn: () => {
+        invariant(dataProvider?.getMany, "getMany not implemented");
+        return dataProvider.getMany(resolvedParams);
+      },
+      placeholderData: keepPreviousData,
+      enabled: !!dataProvider,
+    });
+
+  const loading = (isFetching && isPlaceholderData) || isLoading;
 
   return React.useMemo(
     () => ({ data, error, loading, refetch }),
@@ -179,7 +178,7 @@ export function useGetOne<R extends Datum>(
   const {
     data = null,
     error,
-    isLoading: loading,
+    isPending: loading,
     refetch,
   } = useQuery({
     queryKey: ["getOne", key, id],

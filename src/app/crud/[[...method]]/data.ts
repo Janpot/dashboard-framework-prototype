@@ -27,7 +27,7 @@ const delay = async (ms: number) =>
 
 export const employees = createDataProvider<Employee>({
   async getMany({ filter, pagination }) {
-    await delay(500);
+    await delay(2000);
     invariant(pagination, "Pagination is required");
     return {
       rows: DATA.slice(

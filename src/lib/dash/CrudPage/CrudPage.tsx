@@ -158,10 +158,11 @@ function ListPage<R extends Datum>({}: ListPageProps) {
     [gridPaginationModel.page, gridPaginationModel.pageSize],
   );
 
-  const { data, loading, error } = useGetMany(
-    dataProvider ?? null,
-    useGetManyParams,
-  );
+  const {
+    data,
+    loading: loading,
+    error,
+  } = useGetMany(dataProvider ?? null, useGetManyParams);
 
   const columns = React.useMemo(() => {
     let gridColumns: readonly GridColDef<R>[] = Object.keys(
@@ -373,7 +374,7 @@ function ShowPage<R extends Datum>({ id }: ShowPageProps) {
   const navigate = useNavigate();
   const dialogs = useDialogs();
   const { basePath, name, dataProvider } = useCrudContext<R>();
-  const { data, error, loading } = useGetOne(dataProvider, id);
+  const { data, error, loading: loading } = useGetOne(dataProvider, id);
   const deleteMutation = useDeleteOne(dataProvider);
 
   const handleDeleteClick = React.useCallback(async () => {
@@ -460,7 +461,7 @@ interface EditPageProps {
 function EditPage<R extends Datum>({ id }: EditPageProps) {
   const navigate = useNavigate();
   const { basePath, name, dataProvider } = useCrudContext<R>();
-  const { data, error, loading } = useGetOne(dataProvider, id);
+  const { data, error, loading: loading } = useGetOne(dataProvider, id);
   const updateMutation = useUpdateOne(dataProvider);
 
   const handleChange = React.useCallback(
