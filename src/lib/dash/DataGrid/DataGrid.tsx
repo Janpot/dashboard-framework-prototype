@@ -17,7 +17,6 @@ import {
   useGridApiRef,
   GridActionsCellItemProps,
   GridActionsCellItem,
-  GridApi,
   GridEventListener,
 } from "@mui/x-data-grid";
 import React from "react";
@@ -271,10 +270,11 @@ function updateColumnsWithDataProviderEditing<R extends Datum>(
       getActions: (params) => {
         const actions: React.ReactElement<GridActionsCellItemProps>[] = [];
 
-        const isEditing = state.editedRowId !== null;
+        const isEditing =
+          state.editedRowId !== null || state.isProcessingRowUpdate;
         const isEditedRow = params.id === state.editedRowId;
 
-        if (isEditedRow || state.isProcessingRowUpdate) {
+        if (isEditedRow) {
           actions.push(
             <GridActionsCellItem
               key="save"
@@ -393,16 +393,26 @@ function usePatchedRowModesModel(
   }, [rowModesModel]);
 }
 
-function diff<R extends Record<PropertyKey, unknown>>(
+function diffRows<R extends Record<PropertyKey, unknown>>(
   original: R,
   changed: R,
 ): Partial<R> {
   const keys = new Set([...Object.keys(original), ...Object.keys(changed)]);
   const diff: Partial<R> = {};
   for (const key of keys) {
-    if (original[key] !== changed[key]) {
-      (diff as any)[key] = changed[key];
+    const originalValue = original[key];
+    const changedValue = changed[key];
+    if (Object.is(originalValue, changedValue)) {
+      continue;
     }
+    if (
+      originalValue instanceof Date &&
+      changedValue instanceof Date &&
+      originalValue.getTime() === changedValue.getTime()
+    ) {
+      continue;
+    }
+    (diff as any)[key] = changed[key];
   }
   return diff;
 }
@@ -418,8 +428,6 @@ export function DataGrid<R extends Datum>(propsIn: DataGridProps<R>) {
     autosizeOptions: autosizeOptionsProp,
     getRowId: getRowIdProp,
     rowModesModel: rowModesModelProp,
-    pinnedRows: pinnedRowsProp,
-    pinnedColumns: pinnedColumnsProp,
     ...props
   } = propsIn;
 
@@ -501,7 +509,7 @@ export function DataGrid<R extends Datum>(propsIn: DataGridProps<R>) {
         } else {
           invariant(updateOne, "updateOne not implemented");
 
-          const changedValues = diff(originalRow, updatedRow);
+          const changedValues = diffRows(originalRow, updatedRow);
           if (Object.keys(changedValues).length <= 0) {
             return originalRow;
           }
