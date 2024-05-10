@@ -51,11 +51,13 @@ function createDraftRow(): {} {
   return row;
 }
 
-function isDraftRow<R>(row: R): boolean {
+type MaybeDraftRow<R> = R & { [DRAFT_ROW_MARKER]?: true };
+
+function isDraftRow<R>(row: MaybeDraftRow<R>): boolean {
   return !!row[DRAFT_ROW_MARKER];
 }
 
-function cleanDraftRow<R>(row: R): R {
+function cleanDraftRow<R>(row: MaybeDraftRow<R>): R {
   const cleanedRow = { ...row };
   delete cleanedRow[DRAFT_ROW_MARKER];
   return cleanedRow;
@@ -476,7 +478,7 @@ export function DataGrid<R extends Datum>(propsIn: DataGridProps<R>) {
             return { ...originalRow, _action: "delete" };
           }
 
-          const key = notifications.enqueue("Row updated", {
+          const key = notifications.enqueue("Row created", {
             severity: "success",
             actionText: "Show",
             onAction: () => {
