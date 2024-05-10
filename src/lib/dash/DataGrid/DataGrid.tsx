@@ -44,7 +44,22 @@ const ACTIONS_COLUMN_FIELD = "::toolpad-internal-field::actions::";
 
 const DRAFT_ROW_ID = "::toolpad-internal-row::draft::";
 
-const DRAFT_ROW_MARKER = Symbol("draft row");
+const DRAFT_ROW_MARKER = Symbol("draft-row");
+
+function createDraftRow(): {} {
+  const row = { [DRAFT_ROW_MARKER]: true };
+  return row;
+}
+
+function isDraftRow<R>(row: R): boolean {
+  return !!row[DRAFT_ROW_MARKER];
+}
+
+function cleanDraftRow<R>(row: R): R {
+  const cleanedRow = { ...row };
+  delete cleanedRow[DRAFT_ROW_MARKER];
+  return cleanedRow;
+}
 
 const PlaceholderBorder = styled("div")(({ theme }) => ({
   position: "absolute",
@@ -173,12 +188,12 @@ function gridEditingReducer(state: GridState, action: GridAction): GridState {
     case "START_ROW_UPDATE":
       return {
         ...state,
-        editedRowId: null,
+
         isProcessingRowUpdate: true,
         rowModesModel: {},
       };
     case "END_ROW_UPDATE":
-      return { ...state, isProcessingRowUpdate: false };
+      return { ...state, editedRowId: null, isProcessingRowUpdate: false };
   }
 }
 
@@ -368,10 +383,6 @@ function usePatchedRowModesModel(
   }, [rowModesModel]);
 }
 
-interface DraftRow {
-  [DRAFT_ROW_MARKER]?: true;
-}
-
 function diff<R extends Record<PropertyKey, unknown>>(
   original: R,
   changed: R,
@@ -432,7 +443,7 @@ export function DataGrid<R extends Datum>(propsIn: DataGridProps<R>) {
   const rows = React.useMemo(() => {
     const renderedRows = data?.rows ?? [];
     if (editingState.editedRowId === DRAFT_ROW_ID) {
-      return [{ [DRAFT_ROW_MARKER]: true }, ...renderedRows];
+      return [createDraftRow(), ...renderedRows];
     }
     return renderedRows;
   }, [data?.rows, editingState.editedRowId]);
@@ -442,42 +453,82 @@ export function DataGrid<R extends Datum>(propsIn: DataGridProps<R>) {
       return processRowUpdateProp;
     }
     const updateOne = dataProvider?.updateOne;
-    if (!updateOne) {
+    const createOne = dataProvider?.createOne;
+    if (!(updateOne || createOne)) {
       return undefined;
     }
     return async (updatedRow: R, originalRow: R): Promise<R> => {
       try {
-        console.log("processing", updatedRow, originalRow);
-        const changedValues = diff(originalRow, updatedRow);
-        if (Object.keys(changedValues).length <= 0) {
-          return originalRow;
+        setIsProcessingRowUpdate(true);
+
+        let result: R;
+        if (isDraftRow(updatedRow)) {
+          invariant(createOne, "createOne not implemented");
+
+          const rowInit = cleanDraftRow(updatedRow);
+
+          try {
+            result = await createOne(rowInit);
+          } catch (error) {
+            notifications.enqueue("Failed to create row", {
+              severity: "error",
+            });
+            return { ...originalRow, _action: "delete" };
+          }
+
+          const key = notifications.enqueue("Row updated", {
+            severity: "success",
+            actionText: "Show",
+            onAction: () => {
+              apiRef.current.setFilterModel({
+                items: [
+                  { field: "id", operator: "equals", value: String(result.id) },
+                ],
+              });
+              notifications.close(key);
+            },
+          });
+        } else {
+          invariant(updateOne, "updateOne not implemented");
+
+          const changedValues = diff(originalRow, updatedRow);
+          if (Object.keys(changedValues).length <= 0) {
+            return originalRow;
+          }
+
+          try {
+            result = await updateOne(updatedRow.id, changedValues);
+          } catch (error) {
+            notifications.enqueue("Failed to update row", {
+              severity: "error",
+            });
+            return originalRow;
+          }
+
+          const key = notifications.enqueue("Row updated", {
+            severity: "success",
+            actionText: "Show",
+            onAction: () => {
+              apiRef.current.setFilterModel({
+                items: [
+                  { field: "id", operator: "equals", value: String(result.id) },
+                ],
+              });
+              notifications.close(key);
+            },
+          });
         }
 
-        setIsProcessingRowUpdate(true);
-        const result = await updateOne(updatedRow.id, changedValues);
-        const key = notifications.enqueue("Row updated", {
-          severity: "success",
-          actionText: "Show",
-          onAction: () => {
-            apiRef.current.setFilterModel({
-              items: [
-                { field: "id", operator: "equals", value: String(result.id) },
-              ],
-            });
-            notifications.close(key);
-          },
-        });
         return result;
-      } catch (error) {
-        notifications.enqueue("Failed to update row", { severity: "error" });
-        return originalRow;
       } finally {
         setIsProcessingRowUpdate(false);
+        dispatchEditingAction({ kind: "END_ROW_UPDATE" });
         refetch();
       }
     };
   }, [
     apiRef,
+    dataProvider?.createOne,
     dataProvider?.updateOne,
     notifications,
     processRowUpdateProp,
@@ -504,8 +555,8 @@ export function DataGrid<R extends Datum>(propsIn: DataGridProps<R>) {
   }, [editingState.editedRowId, handleCreateRowRequest, slotsProp]);
 
   const getRowId = React.useCallback(
-    (row: R & DraftRow) => {
-      if (row[DRAFT_ROW_MARKER]) {
+    (row: R) => {
+      if (isDraftRow(row)) {
         return DRAFT_ROW_ID;
       }
       if (getRowIdProp) {
@@ -521,12 +572,11 @@ export function DataGrid<R extends Datum>(propsIn: DataGridProps<R>) {
     editingState.rowModesModel ?? {},
   );
 
-  const handleRowModesModelChange = React.useCallback(
-    (model: GridRowModesModel) => {
-      console.log("hello", model);
-    },
-    [],
-  );
+  const handleRowEditStart = React.useCallback((params) => {
+    if (params.reason === "cellDoubleClick") {
+      dispatchEditingAction({ kind: "START_ROW_EDIT", rowId: params.id });
+    }
+  }, []);
 
   // Leave this to the user
   const pinnedColumns: GridPinnedColumnFields = React.useMemo(
@@ -568,7 +618,7 @@ export function DataGrid<R extends Datum>(propsIn: DataGridProps<R>) {
               processRowUpdate={processRowUpdate}
               slots={slots}
               rowModesModel={rowModesModelPatched}
-              onRowModesModelChange={handleRowModesModelChange}
+              onRowEditStart={handleRowEditStart}
               getRowId={getRowId}
               {...props}
               // TODO: can we make this optional?
