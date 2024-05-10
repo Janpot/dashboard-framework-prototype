@@ -462,9 +462,6 @@ export function DataGrid<R extends Datum>(propsIn: DataGridProps<R>) {
     dispatchEditingAction({ kind: "START_ROW_EDIT", rowId: DRAFT_ROW_ID });
   }, []);
 
-  const [isProcessingRowUpdate, setIsProcessingRowUpdate] =
-    React.useState(false);
-
   const notifications = useNotifications();
 
   const useGetManyParams = React.useMemo<GetManyParams<R>>(
@@ -502,8 +499,6 @@ export function DataGrid<R extends Datum>(propsIn: DataGridProps<R>) {
     }
     return async (updatedRow: R, originalRow: R): Promise<R> => {
       try {
-        setIsProcessingRowUpdate(true);
-
         let result: R;
         if (isDraftRow(updatedRow)) {
           invariant(createOne, "createOne not implemented");
@@ -564,7 +559,6 @@ export function DataGrid<R extends Datum>(propsIn: DataGridProps<R>) {
 
         return result;
       } finally {
-        setIsProcessingRowUpdate(false);
         dispatchEditingAction({ kind: "END_ROW_UPDATE" });
         refetch();
       }

@@ -11,6 +11,7 @@ import {
   FieldDef,
   useDeleteOne,
   useGetMany,
+  GetManyParams,
 } from "../data";
 import {
   Alert,
@@ -35,7 +36,12 @@ import { Controller, DefaultValues, Path, useForm } from "react-hook-form";
 import { LoadingButton } from "@mui/lab";
 import { useNavigate } from "../navigation";
 import Grid2 from "@mui/material/Unstable_Grid2";
-import { DataGrid, GridColDef, GridEventListener } from "@mui/x-data-grid";
+import {
+  DataGrid,
+  GridColDef,
+  GridEventListener,
+  GridPaginationModel,
+} from "@mui/x-data-grid";
 import { ErrorOverlay, LoadingOverlay } from "../components";
 import { useDialogs } from "../useDialogs";
 import { useNonNullableContext } from "../utils";
@@ -135,9 +141,26 @@ function ListPage<R extends Datum>({}: ListPageProps) {
     [basePath, navigate],
   );
 
-  const { data, loading, error, refetch } = useGetMany(
+  const [gridPaginationModel, setGridPaginationModel] =
+    React.useState<GridPaginationModel>({
+      pageSize: 10,
+      page: 0,
+    });
+
+  const useGetManyParams = React.useMemo<GetManyParams<R>>(
+    () => ({
+      pagination: {
+        start: gridPaginationModel.page * gridPaginationModel.pageSize,
+        pageSize: gridPaginationModel.pageSize,
+      },
+      filter: {},
+    }),
+    [gridPaginationModel.page, gridPaginationModel.pageSize],
+  );
+
+  const { data, loading, error } = useGetMany(
     dataProvider ?? null,
-    {},
+    useGetManyParams,
   );
 
   const columns = React.useMemo(() => {
@@ -168,11 +191,16 @@ function ListPage<R extends Datum>({}: ListPageProps) {
           </Button>
         </Box>
       </Toolbar>
-      <DataGrid
-        rows={data?.rows ?? EMPTY_ARRAY}
-        loading={loading}
-        columns={columns}
-        onRowClick={handleRowClick}
+      <AsyncContent
+        error={error}
+        renderContent={() => (
+          <DataGrid
+            rows={data?.rows ?? EMPTY_ARRAY}
+            loading={loading}
+            columns={columns}
+            onRowClick={handleRowClick}
+          />
+        )}
       />
     </Box>
   );
