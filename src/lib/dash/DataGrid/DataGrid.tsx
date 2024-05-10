@@ -75,10 +75,6 @@ const PlaceholderBorder = styled("div")(({ theme }) => ({
 
 type ProcessRowUpdate = DataGridProProps["processRowUpdate"];
 
-type ActionRenderer<R extends Datum> = (
-  params: GridRowParams<R>,
-) => React.ReactElement<GridActionsCellItemProps> | null;
-
 export interface DataGridProps<R extends Datum>
   extends Omit<DataGridProProps<R>, "columns" | "rows"> {
   rows?: readonly R[];
