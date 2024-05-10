@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { DataGrid } from "../DataGrid";
+import { updateColumnsWithDataProviderFields } from "../DataGrid";
 import {
   ResolvedDataProvider,
   Datum,
@@ -10,6 +10,7 @@ import {
   useUpdateOne,
   FieldDef,
   useDeleteOne,
+  useGetMany,
 } from "../data";
 import {
   Alert,
@@ -34,20 +35,21 @@ import { Controller, DefaultValues, Path, useForm } from "react-hook-form";
 import { LoadingButton } from "@mui/lab";
 import { useNavigate } from "../navigation";
 import Grid2 from "@mui/material/Unstable_Grid2";
-import { GridEventListener } from "@mui/x-data-grid";
+import { DataGrid, GridColDef, GridEventListener } from "@mui/x-data-grid";
 import { ErrorOverlay, LoadingOverlay } from "../components";
 import { useDialogs } from "../useDialogs";
+import { useNonNullableContext } from "../utils";
 
-const CrudContext = React.createContext<{
-  dataProvider: ResolvedDataProvider<any>;
+interface CrudContextType<R extends Datum> {
+  dataProvider: ResolvedDataProvider<R>;
   name: string;
   basePath: string;
-} | null>(null);
+}
 
-function useCrudContext() {
-  const context = React.useContext(CrudContext);
-  invariant(context, "Must always be used inside CrudContext");
-  return context;
+const CrudContext = React.createContext<CrudContextType<any> | null>(null);
+
+function useCrudContext<R extends Datum>() {
+  return useNonNullableContext(CrudContext) as CrudContextType<R>;
 }
 
 /*
@@ -121,8 +123,10 @@ function CrudBreadcrumbs({ segments }: CrudBreadcrumbsProps) {
 
 interface ListPageProps {}
 
-function ListPage({}: ListPageProps) {
-  const { basePath, name, dataProvider } = useCrudContext();
+const EMPTY_ARRAY: any[] = [];
+
+function ListPage<R extends Datum>({}: ListPageProps) {
+  const { basePath, name, dataProvider } = useCrudContext<R>();
   const navigate = useNavigate();
   const handleRowClick = React.useCallback<GridEventListener<"rowClick">>(
     ({ id }) => {
@@ -130,6 +134,24 @@ function ListPage({}: ListPageProps) {
     },
     [basePath, navigate],
   );
+
+  const { data, loading, error, refetch } = useGetMany(dataProvider ?? null);
+
+  const columns = React.useMemo(() => {
+    let gridColumns: readonly GridColDef<R>[] = Object.keys(
+      dataProvider.fields,
+    ).map((field) => ({
+      field,
+    }));
+
+    gridColumns = updateColumnsWithDataProviderFields(
+      dataProvider,
+      gridColumns,
+    );
+
+    return gridColumns;
+  }, [dataProvider]);
+
   return (
     <Box>
       <Toolbar disableGutters>
@@ -143,7 +165,12 @@ function ListPage({}: ListPageProps) {
           </Button>
         </Box>
       </Toolbar>
-      <DataGrid dataProvider={dataProvider} onRowClick={handleRowClick} />
+      <DataGrid
+        rows={data?.rows ?? EMPTY_ARRAY}
+        loading={loading}
+        columns={columns}
+        onRowClick={handleRowClick}
+      />
     </Box>
   );
 }
@@ -175,7 +202,7 @@ function DataEditor<R extends Datum>({
   pending,
   error,
 }: DataEditorProps<R>) {
-  const { basePath, dataProvider } = useCrudContext();
+  const { basePath, dataProvider } = useCrudContext<R>();
 
   const { control, handleSubmit } = useForm<R>({
     defaultValues: Object.fromEntries(
@@ -242,7 +269,7 @@ interface NewPageProps {}
 
 function NewPage<R extends Datum>({}: NewPageProps) {
   const navigate = useNavigate();
-  const { basePath, dataProvider } = useCrudContext();
+  const { basePath, dataProvider } = useCrudContext<R>();
   const createMutation = useCreateOne(dataProvider);
 
   const handleChange = React.useCallback(
@@ -311,10 +338,10 @@ interface ShowPageProps {
   id: string;
 }
 
-function ShowPage({ id }: ShowPageProps) {
+function ShowPage<R extends Datum>({ id }: ShowPageProps) {
   const navigate = useNavigate();
   const dialogs = useDialogs();
-  const { basePath, name, dataProvider } = useCrudContext();
+  const { basePath, name, dataProvider } = useCrudContext<R>();
   const { data, error, loading } = useGetOne(dataProvider, id);
   const deleteMutation = useDeleteOne(dataProvider);
 
@@ -401,7 +428,7 @@ interface EditPageProps {
 
 function EditPage<R extends Datum>({ id }: EditPageProps) {
   const navigate = useNavigate();
-  const { basePath, name, dataProvider } = useCrudContext();
+  const { basePath, name, dataProvider } = useCrudContext<R>();
   const { data, error, loading } = useGetOne(dataProvider, id);
   const updateMutation = useUpdateOne(dataProvider);
 

@@ -194,7 +194,7 @@ function gridEditingReducer(state: GridState, action: GridAction): GridState {
   }
 }
 
-function updateColumnsWithDataProviderFields<R extends Datum>(
+export function updateColumnsWithDataProviderFields<R extends Datum>(
   dataProvider: ResolvedDataProvider<R>,
   baseColumns: readonly GridColDef<R>[],
 ): readonly GridColDef<R>[] {
@@ -595,7 +595,7 @@ export function DataGrid<R extends Datum>(propsIn: DataGridProps<R>) {
       return columnsProp ?? [];
     }
 
-    let gridColumns =
+    let gridColumns: readonly GridColDef<R>[] =
       columnsProp ??
       Object.keys(dataProvider.fields).map((field) => ({ field }));
 
