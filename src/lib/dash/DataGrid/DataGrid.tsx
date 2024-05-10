@@ -200,7 +200,6 @@ function getGridColDefsForDataProvider<R extends Datum>(
   baseColumns: readonly GridColDef<R>[],
   state: GridState,
   dispatch: React.Dispatch<GridAction>,
-  apiRef: React.MutableRefObject<GridApi>,
 ): readonly GridColDef<R>[] {
   const isProcessingRowUpdate = false;
 
@@ -601,9 +600,8 @@ export function DataGrid<R extends Datum>(propsIn: DataGridProps<R>) {
       baseColumns,
       editingState,
       dispatchEditingAction,
-      apiRef,
     );
-  }, [apiRef, columnsProp, dataProvider, editingState]);
+  }, [columnsProp, dataProvider, editingState]);
 
   return (
     <ToolbarCreateButtonContext.Provider value={createButtonContext}>
