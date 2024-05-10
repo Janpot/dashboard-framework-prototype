@@ -4,7 +4,6 @@ import {
   DataGridPro,
   DataGridProProps,
   GridColDef,
-  GridPinnedRowsProp,
   GridPinnedColumnFields,
   GridProSlotsComponent,
   GridRowId,
@@ -15,7 +14,6 @@ import {
   GridToolbarDensitySelector,
   GridToolbarExport,
   GridToolbarFilterButton,
-  GridToolbarProps,
   GridValueGetter,
   useGridApiRef,
   GridRowParams,
@@ -24,13 +22,7 @@ import {
   GridApiPro,
 } from "@mui/x-data-grid-pro";
 import React from "react";
-import {
-  Box,
-  Button,
-  CircularProgress,
-  IconButton,
-  styled,
-} from "@mui/material";
+import { Box, Button, CircularProgress, styled } from "@mui/material";
 import {
   ResolvedDataProvider,
   ResolvedField,
@@ -127,17 +119,17 @@ function DeleteAction<R extends Datum>({
   }, [dataProvider, id, notifications, refetch]);
 
   return (
-    <IconButton
+    <GridActionsCellItem
+      icon={
+        pending ? (
+          <CircularProgress size={16} />
+        ) : (
+          <DeleteIcon fontSize="inherit" />
+        )
+      }
+      label={`Delete "${id}"`}
       onClick={handleDeleteClick}
-      size="small"
-      aria-label={`Delete row with id "${id}"`}
-    >
-      {pending ? (
-        <CircularProgress size={16} />
-      ) : (
-        <DeleteIcon fontSize="inherit" />
-      )}
-    </IconButton>
+    />
   );
 }
 
@@ -254,7 +246,6 @@ function getGridColDefsForDataProvider<R extends Datum>(
       getActions: (params) => {
         const actions: React.ReactElement<GridActionsCellItemProps>[] = [];
 
-        const isDraftRow = params.id === DRAFT_ROW_ID;
         const isEditing = state.editedRowId !== null;
         const isEditedRow = params.id === state.editedRowId;
 
