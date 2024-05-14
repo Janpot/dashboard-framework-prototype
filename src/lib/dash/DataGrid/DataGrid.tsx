@@ -40,6 +40,14 @@ import CloseIcon from "@mui/icons-material/Close";
 import invariant from "invariant";
 import { useNonNullableContext } from "../utils";
 
+const subscribe = () => () => {};
+const getSnapshot = () => false;
+const getServerSnapshot = () => true;
+
+function useSsr() {
+  return React.useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+}
+
 const ACTIONS_COLUMN_FIELD = "::toolpad-internal-field::actions::";
 
 const DRAFT_ROW_ID = "::toolpad-internal-row::draft::";
@@ -650,42 +658,43 @@ export function DataGrid<R extends Datum>(propsIn: DataGridProps<R>) {
     return gridColumns;
   }, [columnsProp, dataProvider, editingState]);
 
+  const isSsr = useSsr();
+
   return (
     <RefetchContext.Provider value={refetch}>
       <ToolbarCreateButtonContext.Provider value={createButtonContext}>
         <Box sx={{ height: 400, position: "relative" }}>
-          {mounted ? (
-            <>
-              <XDataGrid
-                pagination
-                apiRef={apiRef}
-                rows={rows}
-                columns={columns}
-                loading={loading}
-                processRowUpdate={processRowUpdate}
-                slots={slots}
-                rowModesModel={rowModesModelPatched}
-                onRowEditStart={handleRowEditStart}
-                getRowId={getRowId}
-                paginationModel={gridPaginationModel}
-                onPaginationModelChange={setGridPaginationModel}
-                rowCount={data?.totalCount ?? 0}
-                {...props}
-                // TODO: How can we make these optional?
-                editMode="row"
-                paginationMode="server"
-              />
-              {error ? (
-                <PlaceholderBorder>
-                  <ErrorOverlay error={error} />
-                </PlaceholderBorder>
-              ) : null}
-            </>
-          ) : (
+          <XDataGrid
+            pagination
+            apiRef={apiRef}
+            rows={rows}
+            columns={columns}
+            loading={loading}
+            processRowUpdate={processRowUpdate}
+            slots={slots}
+            rowModesModel={rowModesModelPatched}
+            onRowEditStart={handleRowEditStart}
+            getRowId={getRowId}
+            paginationModel={gridPaginationModel}
+            onPaginationModelChange={setGridPaginationModel}
+            rowCount={data?.totalCount ?? 0}
+            {...props}
+            // TODO: How can we make these optional?
+            editMode="row"
+            paginationMode="server"
+          />
+
+          {isSsr ? (
             <PlaceholderBorder>
               <LoadingOverlay />
             </PlaceholderBorder>
-          )}
+          ) : null}
+
+          {error ? (
+            <PlaceholderBorder>
+              <ErrorOverlay error={error} />
+            </PlaceholderBorder>
+          ) : null}
         </Box>
       </ToolbarCreateButtonContext.Provider>
     </RefetchContext.Provider>
