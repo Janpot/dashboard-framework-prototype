@@ -112,7 +112,7 @@ export default function DashboardContent() {
           </Box>
           <Box>
             <Grid container spacing={4}>
-              <Grid xs={12}>
+              <Grid xs={12} sx={{ height: 400 }}>
                 <DataGrid dataProvider={dataProvider} pagination autoPageSize />
               </Grid>
               <Grid xs={12} md={6}>
@@ -187,7 +187,7 @@ export default function DashboardContent() {
                   </CardContent>
                 </Card>
               </Grid>
-              <Grid xs={12}>
+              <Grid xs={12} sx={{ height: 400 }}>
                 <DataGrid dataProvider={gaData} pagination autoPageSize />
               </Grid>
             </Grid>

@@ -663,7 +663,12 @@ export function DataGrid<R extends Datum>(propsIn: DataGridProps<R>) {
   return (
     <RefetchContext.Provider value={refetch}>
       <ToolbarCreateButtonContext.Provider value={createButtonContext}>
-        <Box sx={{ height: 400, position: "relative" }}>
+        <Box
+          sx={{
+            height: props.autoHeight ? undefined : "100%",
+            position: "relative",
+          }}
+        >
           <XDataGrid
             pagination
             apiRef={apiRef}
@@ -685,6 +690,7 @@ export function DataGrid<R extends Datum>(propsIn: DataGridProps<R>) {
           />
 
           {isSsr ? (
+            // At last show something during SSR https://github.com/mui/mui-x/issues/7599
             <PlaceholderBorder>
               <LoadingOverlay />
             </PlaceholderBorder>
