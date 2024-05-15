@@ -3,7 +3,7 @@
 import React from "react";
 import { PieChart as XPieChart } from "@mui/x-charts";
 import { Box } from "@mui/material";
-import { useGetMany, ResolvedDataProvider, Datum } from "../data";
+import { useGetMany, ResolvedDataProvider, Datum } from "../DataProvider";
 import { LoadingOverlay, ErrorOverlay } from "../components";
 
 export interface PieChartProps<R extends Datum> {
@@ -17,7 +17,11 @@ export function PieChart<R extends Datum>({
   dimension,
   label,
 }: PieChartProps<R>) {
-  const { data, loading: loading, error } = useGetMany(dataProvider);
+  const {
+    data,
+    loading: loading,
+    error,
+  } = useGetMany(dataProvider, { pagination: null, filter: {} });
 
   const series = React.useMemo(() => {
     const rows = data?.rows ?? [];

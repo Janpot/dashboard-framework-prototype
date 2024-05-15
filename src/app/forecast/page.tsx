@@ -52,7 +52,9 @@ export default function DashboardContent() {
               ))}
             </TextField>
           </Toolbar>
-          <DataGrid dataProvider={forecast} pagination autoPageSize />
+          <Box sx={{ height: 400 }}>
+            <DataGrid dataProvider={forecast} pagination autoPageSize />
+          </Box>
           <Box>
             <Grid container spacing={4}>
               <Grid xs={12} md={4}>

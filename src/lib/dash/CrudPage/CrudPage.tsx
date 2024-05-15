@@ -12,7 +12,7 @@ import {
   useDeleteOne,
   useGetMany,
   GetManyParams,
-} from "../data";
+} from "../DataProvider";
 import {
   Alert,
   Box,
@@ -192,17 +192,19 @@ function ListPage<R extends Datum>({}: ListPageProps) {
           </Button>
         </Box>
       </Toolbar>
-      <AsyncContent
-        error={error}
-        renderContent={() => (
-          <DataGrid
-            rows={data?.rows ?? EMPTY_ARRAY}
-            loading={loading}
-            columns={columns}
-            onRowClick={handleRowClick}
-          />
-        )}
-      />
+      <Box sx={{ height: 600 }}>
+        <AsyncContent
+          error={error}
+          renderContent={() => (
+            <DataGrid
+              rows={data?.rows ?? EMPTY_ARRAY}
+              loading={loading}
+              columns={columns}
+              onRowClick={handleRowClick}
+            />
+          )}
+        />
+      </Box>
     </Box>
   );
 }

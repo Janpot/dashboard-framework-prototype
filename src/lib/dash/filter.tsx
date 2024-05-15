@@ -1,7 +1,7 @@
 import "client-only";
 import * as React from "react";
 import { useSearchParams } from "./navigation";
-import type { Datum, ResolvedDataProvider, ValidDatum } from "./data";
+import type { Datum, ResolvedDataProvider, ValidDatum } from "./DataProvider";
 
 export interface FilterOption<
   R,

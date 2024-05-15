@@ -1,4 +1,4 @@
-export * from "./data";
+export * from "./DataProvider";
 export * from "./Dashboard";
 export * from "./DataGrid";
 export * from "./LineChart";
@@ -7,4 +7,3 @@ export * from "./PieChart";
 export * from "./Metric";
 export * from "./CrudPage";
 export * from "./filter";
-export * from "./data";

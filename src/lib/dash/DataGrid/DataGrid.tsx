@@ -28,8 +28,7 @@ import {
   Datum,
   useGetMany,
   GetManyParams,
-  PaginationMode,
-} from "../data";
+} from "../DataProvider";
 import { ErrorOverlay, LoadingOverlay } from "../components";
 import { useNotifications } from "../useNotifications";
 import RowsLoadingOverlay from "./LoadingOverlay";
@@ -84,11 +83,11 @@ const PlaceholderBorder = styled("div")(({ theme }) => ({
 
 type ProcessRowUpdate = XDataGridProps["processRowUpdate"];
 
-export interface DataGridProps<R extends Datum, P extends PaginationMode>
+export interface DataGridProps<R extends Datum>
   extends Omit<XDataGridProps<R>, "columns" | "rows"> {
   rows?: readonly R[];
   columns?: readonly GridColDef<R>[];
-  dataProvider?: ResolvedDataProvider<R, P>;
+  dataProvider?: ResolvedDataProvider<R>;
 }
 
 const dateValueGetter = (value: any) => {
@@ -436,9 +435,7 @@ function diffRows<R extends Record<PropertyKey, unknown>>(
   return diff;
 }
 
-export function DataGrid<R extends Datum>(
-  propsIn: DataGridProps<R, PaginationMode>,
-) {
+export function DataGrid<R extends Datum>(propsIn: DataGridProps<R>) {
   const {
     dataProvider,
     columns: columnsProp,
@@ -482,13 +479,20 @@ export function DataGrid<R extends Datum>(
 
   const useGetManyParams = React.useMemo<GetManyParams<R>>(
     () => ({
-      pagination: {
-        start: gridPaginationModel.page * gridPaginationModel.pageSize,
-        pageSize: gridPaginationModel.pageSize,
-      },
+      pagination:
+        props.paginationMode === "server"
+          ? {
+              start: gridPaginationModel.page * gridPaginationModel.pageSize,
+              pageSize: gridPaginationModel.pageSize,
+            }
+          : null,
       filter: {},
     }),
-    [gridPaginationModel.page, gridPaginationModel.pageSize],
+    [
+      gridPaginationModel.page,
+      gridPaginationModel.pageSize,
+      props.paginationMode,
+    ],
   );
 
   const {
@@ -683,16 +687,15 @@ export function DataGrid<R extends Datum>(
             rowModesModel={rowModesModelPatched}
             onRowEditStart={handleRowEditStart}
             getRowId={getRowId}
-            paginationModel={gridPaginationModel}
-            onPaginationModelChange={setGridPaginationModel}
-            rowCount={
-              (dataProvider?.paginationMode === "client"
-                ? rows.length
-                : data?.totalCount) ?? -1
-            }
-            paginationMode={dataProvider?.paginationMode}
+            {...(props.paginationMode === "server"
+              ? {
+                  gridPaginationModel,
+                  onPaginationModelChange: setGridPaginationModel,
+                  rowCount: data?.totalCount ?? -1,
+                }
+              : {})}
             {...props}
-            // TODO: How can we make these optional?
+            // TODO: How can we make this optional?
             editMode="row"
           />
 

@@ -8,7 +8,7 @@ import {
   blueberryTwilightPalette,
 } from "@mui/x-charts";
 import { Box, useTheme } from "@mui/material";
-import { Datum, ResolvedDataProvider, useGetMany } from "../data";
+import { Datum, ResolvedDataProvider, useGetMany } from "../DataProvider";
 import { ErrorOverlay, LoadingOverlay } from "../components";
 
 export interface LineChartProps<R extends Datum> extends XLineChartProps {

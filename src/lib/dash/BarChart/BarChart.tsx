@@ -7,7 +7,7 @@ import {
   AxisConfig,
 } from "@mui/x-charts";
 import { Box } from "@mui/material";
-import { Datum, ResolvedDataProvider, useGetMany } from "../data";
+import { Datum, ResolvedDataProvider, useGetMany } from "../DataProvider";
 import { ErrorOverlay, LoadingOverlay } from "../components";
 
 export interface BarChartProps<R extends Datum> extends XBarChartProps {

@@ -1,5 +1,10 @@
 import * as React from "react";
-import { ResolvedDataProvider, Datum, ValidProp, useGetMany } from "../data";
+import {
+  ResolvedDataProvider,
+  Datum,
+  ValidProp,
+  useGetMany,
+} from "../DataProvider";
 import { ErrorOverlay, LoadingOverlay } from "../components";
 import { Box, Card, CardContent, Typography } from "@mui/material";
 
@@ -49,7 +54,11 @@ export function Metric<R extends Datum>({
   field,
   aggregation = "latest",
 }: MetricProps<R>) {
-  const { data, loading: loading, error } = useGetMany(dataProvider);
+  const {
+    data,
+    loading: loading,
+    error,
+  } = useGetMany(dataProvider, { pagination: null, filter: {} });
 
   const fieldDef = React.useMemo(() => {
     return dataProvider.fields[field];

@@ -4,10 +4,6 @@ import { getObjectKey } from "../utils";
 import invariant from "invariant";
 import * as React from "react";
 
-export type PaginationMode = "server" | "client";
-
-export const DEFAULT_PAGINATION_MODE: PaginationMode = "server";
-
 export type ValidId = string | number;
 export type ValidDatum = {
   id: ValidId;
@@ -39,11 +35,8 @@ export interface IndexPagination {
 
 export type Pagination = IndexPagination;
 
-export interface GetManyParams<
-  R extends Datum,
-  P extends PaginationMode = PaginationMode,
-> {
-  pagination: P extends "server" ? Pagination : null;
+export interface GetManyParams<R extends Datum> {
+  pagination: Pagination | null;
   filter: Filter<R>;
 }
 
@@ -52,11 +45,8 @@ export interface GetManyResult<R extends Datum> {
   totalCount?: number;
 }
 
-export interface GetManyMethod<
-  R extends Datum,
-  P extends PaginationMode = PaginationMode,
-> {
-  (params: GetManyParams<R, P>): Promise<GetManyResult<R>>;
+export interface GetManyMethod<R extends Datum> {
+  (params: GetManyParams<R>): Promise<GetManyResult<R>>;
 }
 
 export interface ResolvedField<
@@ -84,12 +74,8 @@ export interface DeleteOneMethod {
   (id: ValidId): Promise<void>;
 }
 
-export interface DataProviderDefinition<
-  R extends Datum,
-  P extends PaginationMode = PaginationMode,
-> {
-  paginationMode?: P;
-  getMany: GetManyMethod<R, P>;
+export interface DataProviderDefinition<R extends Datum> {
+  getMany: GetManyMethod<R>;
   getOne?: GetOneMethod<R>;
   createOne?: CreateOneMethod<R>;
   updateOne?: UpdateOneMethod<R>;
@@ -105,12 +91,8 @@ export type resolvedFields<R extends Datum> = {
   [K in keyof R & string]: ResolvedField<R, K>;
 };
 
-export interface ResolvedDataProvider<
-  R extends Datum,
-  P extends PaginationMode = PaginationMode,
-> {
-  paginationMode: P;
-  getMany: GetManyMethod<R, P>;
+export interface ResolvedDataProvider<R extends Datum> {
+  getMany: GetManyMethod<R>;
   getOne?: GetOneMethod<R>;
   createOne?: CreateOneMethod<R>;
   updateOne?: UpdateOneMethod<R>;
@@ -118,10 +100,9 @@ export interface ResolvedDataProvider<
   fields: resolvedFields<R>;
 }
 
-export function createDataProvider<
-  R extends Datum,
-  P extends PaginationMode = typeof DEFAULT_PAGINATION_MODE,
->(input: DataProviderDefinition<R, P>): ResolvedDataProvider<R, P> {
+export function createDataProvider<R extends Datum>(
+  input: DataProviderDefinition<R>,
+): ResolvedDataProvider<R> {
   const fields = {
     id: { label: "id", type: "string" },
     ...Object.fromEntries(
@@ -131,7 +112,7 @@ export function createDataProvider<
       ]),
     ),
   } as resolvedFields<R>;
-  return { paginationMode: DEFAULT_PAGINATION_MODE as P, ...input, fields };
+  return { ...input, fields };
 }
 
 export interface Query<R> {
@@ -145,34 +126,24 @@ function getKeyFromPagination(pagination: Pagination): string {
   return `${pagination.start}-${pagination.pageSize}`;
 }
 
-function getKeyForParams(params: GetManyParams<any, PaginationMode>): string[] {
+function getKeyForParams(params: GetManyParams<any>): string[] {
   return [
     params.filter ? getKeyFromFilter(params.filter) : "",
     params.pagination ? getKeyFromPagination(params.pagination) : "",
   ];
 }
 
-export function useGetMany<
-  R extends Datum,
-  P extends PaginationMode = PaginationMode,
->(
-  dataProvider: ResolvedDataProvider<R, P> | null,
-  params: GetManyParams<R, P>,
+export function useGetMany<R extends Datum>(
+  dataProvider: ResolvedDataProvider<R> | null,
+  params: GetManyParams<R>,
 ): Query<GetManyResult<R>> {
   const providerKey = dataProvider ? getObjectKey(dataProvider) : null;
   const environmentFilter = useAppliedFilter(dataProvider);
 
-  const resolvedParams: GetManyParams<R, P> = React.useMemo(() => {
-    const pagination =
-      dataProvider?.paginationMode === "server" ? params?.pagination : null;
+  const resolvedParams: GetManyParams<R> = React.useMemo(() => {
     const filter = { ...environmentFilter, ...params?.filter };
-    return { pagination, filter } as GetManyParams<R, P>;
-  }, [
-    dataProvider?.paginationMode,
-    environmentFilter,
-    params?.filter,
-    params?.pagination,
-  ]);
+    return { ...params, filter } as GetManyParams<R>;
+  }, [environmentFilter, params]);
 
   const { data, error, isLoading, isPlaceholderData, isFetching, refetch } =
     useQuery({
@@ -194,7 +165,7 @@ export function useGetMany<
 }
 
 export function useGetOne<R extends Datum>(
-  dataProvider: ResolvedDataProvider<R, PaginationMode> | null,
+  dataProvider: ResolvedDataProvider<R> | null,
   id: string,
 ): Query<R | null> {
   const key = dataProvider ? getObjectKey(dataProvider) : null;
@@ -226,7 +197,7 @@ export interface Mutation<F extends (...args: any[]) => Promise<any>> {
 }
 
 export function useCreateOne<R extends Datum>(
-  dataProvider: ResolvedDataProvider<R, PaginationMode> | null,
+  dataProvider: ResolvedDataProvider<R> | null,
 ): Mutation<CreateOneMethod<R>> {
   const { mutateAsync, isPending, error, reset } = useMutation({
     async mutationFn(data: R) {
@@ -250,7 +221,7 @@ export function useCreateOne<R extends Datum>(
 }
 
 export function useUpdateOne<R extends Datum>(
-  dataProvider: ResolvedDataProvider<R, PaginationMode> | null,
+  dataProvider: ResolvedDataProvider<R> | null,
 ): Mutation<UpdateOneMethod<R>> {
   const { mutateAsync, error, isPending, reset } = useMutation({
     async mutationFn([id, data]: Parameters<UpdateOneMethod<R>>) {
@@ -279,7 +250,7 @@ export function useUpdateOne<R extends Datum>(
 }
 
 export function useDeleteOne<R extends Datum>(
-  dataProvider: ResolvedDataProvider<R, PaginationMode> | null,
+  dataProvider: ResolvedDataProvider<R> | null,
 ): Mutation<DeleteOneMethod> {
   const { mutateAsync, error, isPending, reset } = useMutation({
     async mutationFn(id: ValidId) {

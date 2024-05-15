@@ -4,6 +4,7 @@ import { createDataProvider } from "../../lib/dash";
 import { Filter } from "@toolpad/dashboard";
 import { fetchGaData } from "./serverData";
 import dayjs from "dayjs";
+import invariant from "invariant";
 
 const percentFormat = new Intl.NumberFormat(undefined, {
   style: "percent",
@@ -45,8 +46,9 @@ async function fetchPackageNpmStats(packageName: string, filter: Filter<any>) {
 }
 
 export const dailyStats = createDataProvider({
-  paginationMode: "client",
-  async getMany({ filter }) {
+  async getMany({ filter, pagination }) {
+    invariant(!pagination, "Serverside pagination is not supported");
+
     const [
       muiMaterialDownloads,
       materialUiCoreDownloads,
