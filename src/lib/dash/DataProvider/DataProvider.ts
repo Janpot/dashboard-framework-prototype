@@ -135,14 +135,14 @@ function getKeyForParams(params: GetManyParams<any>): string[] {
 
 export function useGetMany<R extends Datum>(
   dataProvider: ResolvedDataProvider<R> | null,
-  params: GetManyParams<R>,
+  params?: GetManyParams<R>,
 ): Query<GetManyResult<R>> {
   const providerKey = dataProvider ? getObjectKey(dataProvider) : null;
   const environmentFilter = useAppliedFilter(dataProvider);
 
   const resolvedParams: GetManyParams<R> = React.useMemo(() => {
     const filter = { ...environmentFilter, ...params?.filter };
-    return { ...params, filter } as GetManyParams<R>;
+    return { paginatuon: null, ...params, filter } as GetManyParams<R>;
   }, [environmentFilter, params]);
 
   const { data, error, isLoading, isPlaceholderData, isFetching, refetch } =

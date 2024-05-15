@@ -17,11 +17,7 @@ export function PieChart<R extends Datum>({
   dimension,
   label,
 }: PieChartProps<R>) {
-  const {
-    data,
-    loading: loading,
-    error,
-  } = useGetMany(dataProvider, { pagination: null, filter: {} });
+  const { data, loading: loading, error } = useGetMany(dataProvider);
 
   const series = React.useMemo(() => {
     const rows = data?.rows ?? [];
