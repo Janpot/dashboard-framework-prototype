@@ -682,7 +682,7 @@ export function DataGrid<R extends Datum>(propsIn: DataGridProps<R>) {
             getRowId={getRowId}
             paginationModel={gridPaginationModel}
             onPaginationModelChange={setGridPaginationModel}
-            rowCount={data?.totalCount ?? 0}
+            rowCount={data?.totalCount ?? -1}
             {...props}
             // TODO: How can we make these optional?
             editMode="row"
