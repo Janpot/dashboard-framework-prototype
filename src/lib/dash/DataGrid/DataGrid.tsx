@@ -28,6 +28,7 @@ import {
   Datum,
   useGetMany,
   GetManyParams,
+  PaginationMode,
 } from "../data";
 import { ErrorOverlay, LoadingOverlay } from "../components";
 import { useNotifications } from "../useNotifications";
@@ -83,11 +84,11 @@ const PlaceholderBorder = styled("div")(({ theme }) => ({
 
 type ProcessRowUpdate = XDataGridProps["processRowUpdate"];
 
-export interface DataGridProps<R extends Datum>
+export interface DataGridProps<R extends Datum, P extends PaginationMode>
   extends Omit<XDataGridProps<R>, "columns" | "rows"> {
   rows?: readonly R[];
   columns?: readonly GridColDef<R>[];
-  dataProvider?: ResolvedDataProvider<R>;
+  dataProvider?: ResolvedDataProvider<R, P>;
 }
 
 const dateValueGetter = (value: any) => {
@@ -435,7 +436,9 @@ function diffRows<R extends Record<PropertyKey, unknown>>(
   return diff;
 }
 
-export function DataGrid<R extends Datum>(propsIn: DataGridProps<R>) {
+export function DataGrid<R extends Datum>(
+  propsIn: DataGridProps<R, PaginationMode>,
+) {
   const {
     dataProvider,
     columns: columnsProp,
@@ -682,11 +685,15 @@ export function DataGrid<R extends Datum>(propsIn: DataGridProps<R>) {
             getRowId={getRowId}
             paginationModel={gridPaginationModel}
             onPaginationModelChange={setGridPaginationModel}
-            rowCount={data?.totalCount ?? -1}
+            rowCount={
+              (dataProvider?.paginationMode === "client"
+                ? rows.length
+                : data?.totalCount) ?? -1
+            }
+            paginationMode={dataProvider?.paginationMode}
             {...props}
             // TODO: How can we make these optional?
             editMode="row"
-            paginationMode="server"
           />
 
           {isSsr ? (

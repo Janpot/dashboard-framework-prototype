@@ -45,6 +45,7 @@ async function fetchPackageNpmStats(packageName: string, filter: Filter<any>) {
 }
 
 export const dailyStats = createDataProvider({
+  paginationMode: "client",
   async getMany({ filter }) {
     const [
       muiMaterialDownloads,
@@ -173,4 +174,10 @@ export const monthlyStats = createDataProvider({
   },
 });
 
-export const gaData = createDataProvider(fetchGaData);
+export const gaData = createDataProvider({
+  getMany: fetchGaData,
+  fields: {
+    id: {},
+    foo: {},
+  },
+});
